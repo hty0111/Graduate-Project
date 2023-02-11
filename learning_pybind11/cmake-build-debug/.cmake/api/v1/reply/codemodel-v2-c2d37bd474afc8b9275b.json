@@ -1,0 +1,78 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.15"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "test",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "classes::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-classes-Debug-07988a3f5b75cebbaa57.json",
+					"name" : "classes",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "functions::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-functions-Debug-7d822986f5d1ae1839b0.json",
+					"name" : "functions",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "structs::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-structs-Debug-33089415e35a862b065b.json",
+					"name" : "structs",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/hty/Desktop/graduation_project/learning_pybind11/cmake-build-debug",
+		"source" : "/home/hty/Desktop/graduation_project/learning_pybind11"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

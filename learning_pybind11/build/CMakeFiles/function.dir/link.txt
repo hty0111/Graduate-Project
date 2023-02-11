@@ -1,0 +1,1 @@
+g++ -fPIC -flto -shared  -o ../function.cpython-39-x86_64-linux-gnu.so CMakeFiles/function.dir/function.cpp.o 

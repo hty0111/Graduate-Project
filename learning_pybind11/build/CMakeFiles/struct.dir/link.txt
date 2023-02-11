@@ -1,0 +1,1 @@
+g++ -fPIC -flto -shared  -o ../struct.cpython-39-x86_64-linux-gnu.so CMakeFiles/struct.dir/struct.cpp.o 
