@@ -1,1 +1,0 @@
-g++ -fPIC -flto -shared  -o ../classes.cpython-39-x86_64-linux-gnu.so CMakeFiles/classes.dir/classes.cpp.o 

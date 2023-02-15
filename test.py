@@ -43,7 +43,11 @@ def random_demo(env, render=True, episodes=1):
     return total_reward
 
 if __name__ == "__main__":
-    env = simple_spread_v2.env(max_cycles=100, continuous_actions=True, render_mode='human')
-    # env = simple_adversary_v2.env(render_mode='human')
-    random_demo(env, render=True, episodes=100)
+    # env = simple_spread_v2.env(max_cycles=100, continuous_actions=True, render_mode='human')
+    # # env = simple_adversary_v2.env(render_mode='human')
+    # random_demo(env, render=True, episodes=100)
+    import numpy as np
+
+    for i in np.arange(0, 5, 1):
+        print(i)
 

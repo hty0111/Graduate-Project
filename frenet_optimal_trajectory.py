@@ -14,9 +14,9 @@ Ref:
 
 """
 
-from quartic_polynomial_planner import QuarticPolynomial
-from quintic_polynomial_planner import QuinticPolynomial
-from cubic_spline_planner import CubicSpline2D
+from quartic_polynomial import QuarticPolynomial
+from quintic_polynomial import QuinticPolynomial
+from cubic_spline import CubicSpline2D
 
 import numpy as np
 import matplotlib.pyplot as plt

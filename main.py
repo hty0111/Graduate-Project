@@ -6,7 +6,6 @@ Date: 2023-01-29 21:53:19
 """
 
 from frenet_optimal_trajectory import *
-from gridworld import *
 
 import numpy as np
 
@@ -66,3 +65,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
