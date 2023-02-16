@@ -5,7 +5,7 @@ Author: HTY
 Date: 2023-02-07 19:57:55
 """
 
-from mpe import simple_v2, simple_adversary_v2, simple_spread_v2
+from envs.mpe import simple_v2, simple_adversary_v2, simple_spread_v2
 import random
 import numpy as np
 

@@ -1,25 +1,13 @@
 """
-Description: 
-version: v1.0
 Author: HTY
-Date: 2023-02-12 16:06:24
+Email: 1044213317@qq.com
+Date: 2023-02-16 16:04
+Description:
+    - [Optimal Trajectory Generation for Dynamic Street Scenarios in a Frenet Frame]
+    (https://www.researchgate.net/profile/Moritz_Werling/publication/224156269_Optimal_Trajectory_Generation_for_Dynamic_Street_Scenarios_in_a_Frenet_Frame/links/54f749df0cf210398e9277af.pdf)
+    (https://www.youtube.com/watch?v=Cj6tAQe7UCY)
 """
 
-"""
-
-Frenet optimal trajectory generator
-
-author: Atsushi Sakai (@Atsushi_twi)
-
-Ref:
-
-- [Optimal Trajectory Generation for Dynamic Street Scenarios in a Frenet Frame]
-(https://www.researchgate.net/profile/Moritz_Werling/publication/224156269_Optimal_Trajectory_Generation_for_Dynamic_Street_Scenarios_in_a_Frenet_Frame/links/54f749df0cf210398e9277af.pdf)
-
-- [Optimal trajectory generation for dynamic street scenarios in a Frenet Frame]
-(https://www.youtube.com/watch?v=Cj6tAQe7UCY)
-
-"""
 
 from quintic_polynomial import QuinticPolynomial
 from cubic_spline import CubicSpline2D

@@ -1,13 +1,8 @@
 """
-
 Quintic Polynomials Planner
-
 author: Atsushi Sakai (@Atsushi_twi)
-
 Ref:
-
 - [Local Path planning And Motion Control For Agv In Positioning](http://ieeexplore.ieee.org/document/637936/)
-
 """
 
 import math

@@ -5,7 +5,7 @@ Author: HTY
 Date: 2023-01-29 21:53:19
 """
 
-from frenet_optimal_trajectory import *
+from algorithms.lattice.frenet_lattice import *
 
 import numpy as np
 
