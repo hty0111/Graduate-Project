@@ -213,7 +213,7 @@ def main():
         # s_d = path.s_d[1]
         # s_dd = path.s_dd[1]
         #
-        # if np.hypot(path.x[1] - tx[-1], path.y[1] - ty[-1]) <= 2.0:
+        # if np.hypot(path.z[1] - tx[-1], path.y[1] - ty[-1]) <= 2.0:
         #     print("Goal")
         #     break
 

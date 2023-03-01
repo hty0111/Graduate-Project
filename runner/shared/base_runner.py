@@ -1,12 +1,20 @@
+"""
+Author: HTY
+Email: 1044213317@qq.com
+Date: 2023-02-21 00:00
+Description:
+"""
+
+import wandb
 import os
 import numpy as np
 import torch
 from tensorboardX import SummaryWriter
+from utils.typecasting import t2n
 from utils.shared_buffer import SharedReplayBuffer
+from algorithms.mappo.trainer import Trainer
+from algorithms.mappo.mappo import MAPPO as Policy
 
-def _t2n(x):
-    """Convert torch tensor to a numpy array."""
-    return x.detach().cpu().numpy()
 
 class Runner(object):
     """
@@ -14,8 +22,7 @@ class Runner(object):
     :param config: (dict) Config dictionary containing parameters for training.
     """
     def __init__(self, config):
-
-        self.all_args = config['all_args']
+        self.args = config['args']
         self.envs = config['envs']
         self.eval_envs = config['eval_envs']
         self.device = config['device']
@@ -24,63 +31,68 @@ class Runner(object):
             self.render_envs = config['render_envs']       
 
         # parameters
-        self.env_name = self.all_args.env_name
-        self.algorithm_name = self.all_args.algorithm_name
-        self.experiment_name = self.all_args.experiment_name
-        self.use_centralized_V = self.all_args.use_centralized_V
-        self.use_obs_instead_of_state = self.all_args.use_obs_instead_of_state
-        self.num_env_steps = self.all_args.num_env_steps
-        self.episode_length = self.all_args.episode_length
-        self.n_rollout_threads = self.all_args.n_rollout_threads
-        self.n_eval_rollout_threads = self.all_args.n_eval_rollout_threads
-        self.n_render_rollout_threads = self.all_args.n_render_rollout_threads
-        self.use_linear_lr_decay = self.all_args.use_linear_lr_decay
-        self.hidden_size = self.all_args.hidden_size
-        self.use_render = self.all_args.use_render
-        self.recurrent_N = self.all_args.recurrent_N
+        self.env_name = self.args.env_name
+        self.algorithm_name = self.args.algorithm_name
+        self.experiment_name = self.args.experiment_name
+        self.use_centralized_V = self.args.use_centralized_V
+        self.use_obs_instead_of_state = self.args.use_obs_instead_of_state
+        self.num_env_steps = self.args.num_env_steps
+        self.episode_length = self.args.episode_length
+        self.n_rollout_threads = self.args.n_rollout_threads
+        self.n_eval_rollout_threads = self.args.n_eval_rollout_threads
+        self.n_render_rollout_threads = self.args.n_render_rollout_threads
+        self.use_linear_lr_decay = self.args.use_linear_lr_decay
+        self.hidden_size = self.args.hidden_size
+        self.use_wandb = self.args.use_wandb
+        self.use_render = self.args.use_render
+        self.recurrent_N = self.args.recurrent_N
 
         # interval
-        self.save_interval = self.all_args.save_interval
-        self.use_eval = self.all_args.use_eval
-        self.eval_interval = self.all_args.eval_interval
-        self.log_interval = self.all_args.log_interval
+        self.save_interval = self.args.save_interval
+        self.use_eval = self.args.use_eval
+        self.eval_interval = self.args.eval_interval
+        self.log_interval = self.args.log_interval
 
         # dir
-        self.model_dir = self.all_args.model_dir
+        self.model_dir = self.args.model_dir
 
-        self.run_dir = config["run_dir"]
-        self.log_dir = str(self.run_dir / 'logs')
-        if not os.path.exists(self.log_dir):
-            os.makedirs(self.log_dir)
-        self.writter = SummaryWriter(self.log_dir)
-        self.save_dir = str(self.run_dir / 'models')
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
+        if self.use_wandb:
+            self.save_dir = str(wandb.run.dir)
+            self.run_dir = str(wandb.run.dir)
+        else:
+            self.run_dir = config["run_dir"]
+            self.log_dir = str(self.run_dir / 'logs')
+            if not os.path.exists(self.log_dir):
+                os.makedirs(self.log_dir)
+            self.writer = SummaryWriter(self.log_dir)
+            self.save_dir = str(self.run_dir / 'models')
+            if not os.path.exists(self.save_dir):
+                os.makedirs(self.save_dir)
 
-        from algorithms.mappo.r_mappo import RMAPPO as TrainAlgo
-        from algorithms.mappo.rMAPPOPolicy import RMAPPOPolicy as Policy
-
-        share_observation_space = self.envs.share_observation_space[0] if self.use_centralized_V else self.envs.observation_space[0]
+        # 将基类AECEnv中的attribute转换成网络输入
+        obs_space = list(self.envs.observation_spaces.values())[0]    # 认为所有智能体的观测维度一样，取字典中第一个值
+        action_space = list(self.envs.action_spaces.values())[0]      # 认为所有智能体的动作维度一样，取字典中第一个值
+        state_space = self.envs.state_space
 
         # policy network
-        self.policy = Policy(self.all_args,
-                             self.envs.observation_space[0],
-                             share_observation_space,
-                             self.envs.action_space[0],
+        self.policy = Policy(self.args,
+                             obs_space,
+                             state_space,
+                             action_space,
                              device=self.device)
 
         if self.model_dir is not None:
             self.restore()
 
-        # mappo
-        self.trainer = TrainAlgo(self.all_args, self.policy, device=self.device)
+        # algorithm
+        self.trainer = Trainer(self.args, self.policy, device=self.device)
         
         # buffer
-        self.buffer = SharedReplayBuffer(self.all_args,
+        self.buffer = SharedReplayBuffer(self.args,
                                          self.num_agents,
-                                         self.envs.observation_space[0],
-                                         share_observation_space,
-                                         self.envs.action_space[0])
+                                         obs_space,
+                                         state_space,
+                                         action_space)
 
     def run(self):
         """Collect training data, perform training updates, and evaluate policy."""
@@ -105,10 +117,10 @@ class Runner(object):
     def compute(self):
         """Calculate returns for the collected data."""
         self.trainer.prep_rollout()
-        next_values = self.trainer.policy.get_values(np.concatenate(self.buffer.share_obs[-1]),
-                                                np.concatenate(self.buffer.rnn_states_critic[-1]),
-                                                np.concatenate(self.buffer.masks[-1]))
-        next_values = np.array(np.split(_t2n(next_values), self.n_rollout_threads))
+        next_values = self.trainer.policy.get_values(self.buffer.state[-1],
+                                                     self.buffer.rnn_states_critic[-1],
+                                                     self.buffer.masks[-1])
+        next_values = t2n(next_values)
         self.buffer.compute_returns(next_values, self.trainer.value_normalizer)
     
     def train(self):
@@ -124,14 +136,20 @@ class Runner(object):
         torch.save(policy_actor.state_dict(), str(self.save_dir) + "/actor.pt")
         policy_critic = self.trainer.policy.critic
         torch.save(policy_critic.state_dict(), str(self.save_dir) + "/critic.pt")
+        if self.trainer._use_valuenorm:
+            policy_vnorm = self.trainer.value_normalizer
+            torch.save(policy_vnorm.state_dict(), str(self.save_dir) + "/vnorm.pt")
 
     def restore(self):
         """Restore policy's networks from a saved model."""
         policy_actor_state_dict = torch.load(str(self.model_dir) + '/actor.pt')
         self.policy.actor.load_state_dict(policy_actor_state_dict)
-        if not self.all_args.use_render:
+        if not self.args.use_render:
             policy_critic_state_dict = torch.load(str(self.model_dir) + '/critic.pt')
             self.policy.critic.load_state_dict(policy_critic_state_dict)
+            if self.trainer._use_valuenorm:
+                policy_vnorm_state_dict = torch.load(str(self.model_dir) + '/vnorm.pt')
+                self.trainer.value_normalizer.load_state_dict(policy_vnorm_state_dict)
  
     def log_train(self, train_infos, total_num_steps):
         """
@@ -140,7 +158,10 @@ class Runner(object):
         :param total_num_steps: (int) total number of training env steps.
         """
         for k, v in train_infos.items():
-            self.writter.add_scalars(k, {k: v}, total_num_steps)
+            if self.use_wandb:
+                wandb.log({k: v}, step=total_num_steps)
+            else:
+                self.writer.add_scalars(k, {k: v}, total_num_steps)
 
     def log_env(self, env_infos, total_num_steps):
         """
@@ -150,4 +171,7 @@ class Runner(object):
         """
         for k, v in env_infos.items():
             if len(v)>0:
-                self.writter.add_scalars(k, {k: np.mean(v)}, total_num_steps)
+                if self.use_wandb:
+                    wandb.log({k: np.mean(v)}, step=total_num_steps)
+                else:
+                    self.writer.add_scalars(k, {k: np.mean(v)}, total_num_steps)

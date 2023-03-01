@@ -1,8 +1,16 @@
+"""
+Author: HTY
+Email: 1044213317@qq.com
+Date: 2023-02-19 21:53
+Description: 
+"""
+
+
 import os
 
-import gymnasium
 import numpy as np
 import pygame
+import gymnasium
 from gymnasium import spaces
 from gymnasium.utils import seeding
 
@@ -52,9 +60,7 @@ class SimpleEnv(AECEnv):
         self.height = 700
         self.screen = pygame.Surface([self.width, self.height])
         self.max_size = 1
-        self.game_font = pygame.freetype.Font(
-            os.path.join(os.path.dirname(__file__), "secrcode.ttf"), 24
-        )
+        self.game_font = pygame.freetype.Font(os.path.join(os.path.dirname(__file__), "secrcode.ttf"), 24)
 
         # Set up the drawing window
 
@@ -82,26 +88,30 @@ class SimpleEnv(AECEnv):
         self.observation_spaces = dict()
         state_dim = 0
         for agent in self.world.agents:
-            if agent.movable:
-                space_dim = self.world.dim_p * 2 + 1    # 5
-            elif self.continuous_actions:
-                space_dim = 0
-            else:
-                space_dim = 1
-            if not agent.silent:
-                if self.continuous_actions:
-                    space_dim += self.world.dim_c
-                else:
-                    space_dim *= self.world.dim_c
+            # if agent.movable:
+            #     action_dim = self.world.dim_p * 2 + 1    # 5
+            # elif self.continuous_actions:
+            #     action_dim = 0
+            # else:
+            #     action_dim = 1
+            # if not agent.silent:
+            #     if self.continuous_actions:
+            #         action_dim += self.world.dim_c
+            #     else:
+            #         action_dim *= self.world.dim_c
+
+            # lattice TODO
+            # action_dim = dim_t * dim_v * dim_s * dim_d
+            action_dim = 560
 
             obs_dim = len(self.scenario.observation(agent, self.world))
             state_dim += obs_dim
             if self.continuous_actions:
                 self.action_spaces[agent.name] = spaces.Box(
-                    low=0, high=1, shape=(space_dim,)
+                    low=0, high=1, shape=(action_dim,)
                 )
             else:
-                self.action_spaces[agent.name] = spaces.Discrete(space_dim)
+                self.action_spaces[agent.name] = spaces.Discrete(action_dim)
             self.observation_spaces[agent.name] = spaces.Box(
                 low=-np.float32(np.inf),
                 high=+np.float32(np.inf),
@@ -109,6 +119,7 @@ class SimpleEnv(AECEnv):
                 dtype=np.float32,
             )
 
+        # state是每个agent的observation
         self.state_space = spaces.Box(
             low=-np.float32(np.inf),
             high=+np.float32(np.inf),
@@ -117,7 +128,6 @@ class SimpleEnv(AECEnv):
         )
 
         self.steps = 0
-
         self.current_actions = [None] * self.num_agents
 
     def observation_space(self, agent):
@@ -127,7 +137,7 @@ class SimpleEnv(AECEnv):
         return self.action_spaces[agent]
 
     def seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
+        self.np_random, _ = seeding.np_random(seed)
 
     def observe(self, agent):
         return self.scenario.observation(

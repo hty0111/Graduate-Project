@@ -27,7 +27,7 @@ This environment is part of the <a href='..'>MPE environments</a>. Please read t
 This environment is similar to simple_tag, except there is food (small blue balls) that the good agents are rewarded for being near, there are 'forests' that hide agents inside from being seen, and there is a 'leader adversary' that can see the agents at all times and can communicate with the
 other adversaries to help coordinate the chase. By default, there are 2 good agents, 3 adversaries, 1 obstacles, 2 foods, and 2 forests.
 
-In particular, the good agents reward, is -5 for every collision with an adversary, -2 x bound by the `bound` function described in simple_tag, +2 for every collision with a food, and -0.05 x minimum distance to any food. The adversarial agents are rewarded +5 for collisions and -0.1 x minimum
+In particular, the good agents reward, is -5 for every collision with an adversary, -2 z bound by the `bound` function described in simple_tag, +2 for every collision with a food, and -0.05 z minimum distance to any food. The adversarial agents are rewarded +5 for collisions and -0.1 z minimum
 distance to a good agent. s
 
 Good agent observations: `[self_vel, self_pos, landmark_rel_positions, other_agent_rel_positions, other_agent_velocities, self_in_forest]`
@@ -312,7 +312,7 @@ class Scenario(BaseScenario):
                 return 0
             if x < 1.0:
                 return (x - 0.9) * 10
-            return min(np.exp(2 * x - 2), 10)  # 1 + (x - 1) * (x - 1)
+            return min(np.exp(2 * x - 2), 10)  # 1 + (z - 1) * (z - 1)
 
         for p in range(world.dim_p):
             x = abs(agent.state.p_pos[p])

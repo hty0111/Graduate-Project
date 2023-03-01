@@ -30,12 +30,12 @@ default, there is 1 good agent, 3 adversaries and 2 obstacles.
 So that good agents don't run to infinity, they are also penalized for exiting the area by the following function:
 
 ``` python
-def bound(x):
-      if x < 0.9:
+def bound(z):
+      if z < 0.9:
           return 0
-      if x < 1.0:
-          return (x - 0.9) * 10
-      return min(np.exp(2 * x - 2), 10)
+      if z < 1.0:
+          return (z - 0.9) * 10
+      return min(np.exp(2 * z - 2), 10)
 ```
 
 Agent and adversary observations: `[self_vel, self_pos, landmark_rel_positions, other_agent_rel_positions, other_agent_velocities]`

@@ -62,11 +62,11 @@ def quintic_polynomials_planner(start_x, start_y, start_yaw, start_v, start_a, g
     quintic polynomial planner
 
     input
-        start_x: start x position [m]
+        start_x: start z position [m]
         start_y: start y position [m]
         start_yaw: start yaw angle [rad]
         start_a: start accel [m/ss]
-        goal_x: goal x position [m]
+        goal_x: goal z position [m]
         goal_y: goal y position [m]
         goal_yaw: goal yaw angle [rad]
         goal_a: goal accel [m/ss]
@@ -76,7 +76,7 @@ def quintic_polynomials_planner(start_x, start_y, start_yaw, start_v, start_a, g
 
     return
         time: time result
-        rx: x position result list
+        rx: z position result list
         ry: y position result list
         ryaw: yaw angle result list
         rv: velocity result list
@@ -190,12 +190,12 @@ def plot_arrow(x, y, yaw, length=1.0, width=0.5, fc="r", ec="k"):  # pragma: no 
 def main():
     print(__file__ + " start!!")
 
-    start_x = 0.0  # start x position [m]
+    start_x = 0.0  # start z position [m]
     start_y = 0.0  # start y position [m]
     start_yaw = np.deg2rad(0.0)  # start yaw angle [rad]
     start_v = 1.0  # start speed [m/s]
     start_a = 0.0  # start accel [m/ss]
-    goal_x = 20.0  # goal x position [m]
+    goal_x = 20.0  # goal z position [m]
     goal_y = -20.0  # goal y position [m]
     goal_yaw = np.deg2rad(0.0)  # goal yaw angle [rad]
     goal_v = 3.0  # goal speed [m/s]

@@ -1,7 +1,9 @@
 import torch.nn as nn
-from .util import init, get_clones
+import copy
+from utils.util import init
 
 """MLP modules."""
+
 
 class MLPLayer(nn.Module):
     def __init__(self, input_dim, hidden_size, layer_N, use_orthogonal, use_ReLU):
@@ -17,9 +19,9 @@ class MLPLayer(nn.Module):
 
         self.fc1 = nn.Sequential(
             init_(nn.Linear(input_dim, hidden_size)), active_func, nn.LayerNorm(hidden_size))
-        self.fc_h = nn.Sequential(init_(
-            nn.Linear(hidden_size, hidden_size)), active_func, nn.LayerNorm(hidden_size))
-        self.fc2 = get_clones(self.fc_h, self._layer_N)
+        fc_h = nn.Sequential(
+            init_(nn.Linear(hidden_size, hidden_size)), active_func, nn.LayerNorm(hidden_size))
+        self.fc2 = nn.ModuleList([copy.deepcopy(fc_h) for i in range(self._layer_N)])
 
     def forward(self, x):
         x = self.fc1(x)
@@ -44,13 +46,10 @@ class MLPBase(nn.Module):
         if self._use_feature_normalization:
             self.feature_norm = nn.LayerNorm(obs_dim)
 
-        self.mlp = MLPLayer(obs_dim, self.hidden_size,
-                              self._layer_N, self._use_orthogonal, self._use_ReLU)
+        self.mlp = MLPLayer(obs_dim, self.hidden_size, self._layer_N, self._use_orthogonal, self._use_ReLU)
 
     def forward(self, x):
         if self._use_feature_normalization:
             x = self.feature_norm(x)
-
         x = self.mlp(x)
-
         return x

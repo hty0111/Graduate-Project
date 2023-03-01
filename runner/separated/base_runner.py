@@ -1,17 +1,11 @@
-    
-import time
 import wandb
 import os
 import numpy as np
-from itertools import chain
 import torch
 from tensorboardX import SummaryWriter
-
+from utils.typecasting import t2n
 from utils.separated_buffer import SeparatedReplayBuffer
-from utils.util import update_linear_schedule
 
-def _t2n(x):
-    return x.detach().cpu().numpy()
 
 class Runner(object):
     def __init__(self, config):
@@ -48,7 +42,6 @@ class Runner(object):
         self.model_dir = self.all_args.model_dir
 
         if self.use_render:
-            import imageio
             self.run_dir = config["run_dir"]
             self.gif_dir = str(self.run_dir / 'gifs')
             if not os.path.exists(self.gif_dir):
@@ -61,14 +54,14 @@ class Runner(object):
                 self.log_dir = str(self.run_dir / 'logs')
                 if not os.path.exists(self.log_dir):
                     os.makedirs(self.log_dir)
-                self.writter = SummaryWriter(self.log_dir)
+                self.writer = SummaryWriter(self.log_dir)
                 self.save_dir = str(self.run_dir / 'models')
                 if not os.path.exists(self.save_dir):
                     os.makedirs(self.save_dir)
 
 
-        from algorithms.mappo.r_mappo import RMAPPO as TrainAlgo
-        from algorithms.mappo.rMAPPOPolicy import RMAPPOPolicy as Policy
+        from algorithms.mappo.trainer import Trainer as TrainAlgo
+        from algorithms.mappo.mappo import MAPPO as Policy
 
 
         self.policy = []
@@ -88,7 +81,7 @@ class Runner(object):
         self.trainer = []
         self.buffer = []
         for agent_id in range(self.num_agents):
-            # mappo
+            # algorithm
             tr = TrainAlgo(self.all_args, self.policy[agent_id], device = self.device)
             # buffer
             share_observation_space = self.envs.share_observation_space[agent_id] if self.use_centralized_V else self.envs.observation_space[agent_id]
@@ -118,7 +111,7 @@ class Runner(object):
             next_value = self.trainer[agent_id].policy.get_values(self.buffer[agent_id].share_obs[-1], 
                                                                 self.buffer[agent_id].rnn_states_critic[-1],
                                                                 self.buffer[agent_id].masks[-1])
-            next_value = _t2n(next_value)
+            next_value = t2n(next_value)
             self.buffer[agent_id].compute_returns(next_value, self.trainer[agent_id].value_normalizer)
 
     def train(self):
@@ -137,6 +130,9 @@ class Runner(object):
             torch.save(policy_actor.state_dict(), str(self.save_dir) + "/actor_agent" + str(agent_id) + ".pt")
             policy_critic = self.trainer[agent_id].policy.critic
             torch.save(policy_critic.state_dict(), str(self.save_dir) + "/critic_agent" + str(agent_id) + ".pt")
+            if self.trainer[agent_id]._use_valuenorm:
+                policy_vnrom = self.trainer[agent_id].value_normalizer
+                torch.save(policy_vnrom.state_dict(), str(self.save_dir) + "/vnrom_agent" + str(agent_id) + ".pt")
 
     def restore(self):
         for agent_id in range(self.num_agents):
@@ -144,6 +140,9 @@ class Runner(object):
             self.policy[agent_id].actor.load_state_dict(policy_actor_state_dict)
             policy_critic_state_dict = torch.load(str(self.model_dir) + '/critic_agent' + str(agent_id) + '.pt')
             self.policy[agent_id].critic.load_state_dict(policy_critic_state_dict)
+            if self.trainer[agent_id]._use_valuenorm:
+                policy_vnrom_state_dict = torch.load(str(self.model_dir) + '/vnrom_agent' + str(agent_id) + '.pt')
+                self.trainer[agent_id].value_normalizer.load_state_dict(policy_vnrom_state_dict)
 
     def log_train(self, train_infos, total_num_steps): 
         for agent_id in range(self.num_agents):
@@ -152,7 +151,7 @@ class Runner(object):
                 if self.use_wandb:
                     wandb.log({agent_k: v}, step=total_num_steps)
                 else:
-                    self.writter.add_scalars(agent_k, {agent_k: v}, total_num_steps)
+                    self.writer.add_scalars(agent_k, {agent_k: v}, total_num_steps)
 
     def log_env(self, env_infos, total_num_steps):
         for k, v in env_infos.items():
@@ -160,4 +159,4 @@ class Runner(object):
                 if self.use_wandb:
                     wandb.log({k: np.mean(v)}, step=total_num_steps)
                 else:
-                    self.writter.add_scalars(k, {k: np.mean(v)}, total_num_steps)
+                    self.writer.add_scalars(k, {k: np.mean(v)}, total_num_steps)

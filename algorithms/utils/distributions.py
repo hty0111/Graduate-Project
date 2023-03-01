@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from .util import init
+from utils.util import init
 
 """
 Modify standard PyTorch distributions so they to make compatible with this codebase. 
@@ -33,7 +33,7 @@ class FixedNormal(torch.distributions.Normal):
     def log_probs(self, actions):
         return super().log_prob(actions).sum(-1, keepdim=True)
 
-    def entrop(self):
+    def entropy(self):
         return super.entropy().sum(-1)
 
     def mode(self):

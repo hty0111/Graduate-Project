@@ -2,67 +2,63 @@
 Description: 
 version: v1.0
 Author: HTY
-Date: 2023-01-29 21:53:19
+Date: 2023-02-07 19:57:55
 """
 
-from algorithms.lattice.frenet_lattice import *
-
+from envs.mpe import simple_spread_v2, mapf_v1
+import random
 import numpy as np
+from pettingzoo.test import api_test, parallel_api_test
 
-render = True
 
-def main():
-    print(__file__ + " start!!")
+def random_demo(env, render=True, episodes=1):
+    """Runs an env object with random actions."""
+    total_reward = 0
+    completed_episodes = 0
 
-    # way points & obstacles
-    # way_points_x = [0.0, 10.0, 20.5, 35.0, 70.5]
-    # way_points_y = [0.0, -6.0, 5.0, 6.5, 0.0]
-    # ob = np.array([[20.0, 10.0], [30.0, 6.0], [30.0, 8.0], [35.0, 8.0], [50.0, 3.0]])
-    way_points_x = [0.0, 40.0]
-    way_points_y = [0.0, 40.0]
-    ob = np.array([[3.0, 3.0], [10.0, 11.0], [23.0, 25.0]])
+    while completed_episodes < episodes:
+        observations = env.reset()     # simple_env.py/reset(), simple_spread.py/reset_world()
 
-    tx, ty, tyaw, tc, csp = generate_target_course(way_points_x, way_points_y)
+        if env.__class__.__name__ == "aec_to_parallel_wrapper":
+            if render:
+                env.render()    # simple_env.py/render(), simple_env.py/draw()
+            actions = {agent: env.action_space(agent).sample() for agent in
+                       env.agents}  # this is where you would insert your policy
+            observations, rewards, terminations, truncations, infos = env.step(actions)
 
-    # initial state
-    s = 0.0  # current course position
-    s_d = 10.0 / 3.6  # current speed [m/s]
-    s_dd = 0.0  # current acceleration [m/ss]
-    d = 2.0  # current lateral position [m]
-    d_d = 0.0  # current lateral speed [m/s]
-    d_dd = 0.0  # current lateral acceleration [m/s]
+        else:
+            for agent in env.agent_iter():
+                if render:
+                    env.render()    # simple_env.py/render(), simple_env.py/draw()
 
-    while True:
-        path = frenet_optimal_planning(csp, s, s_d, s_dd, d, d_d, d_dd, ob)
+                # 返回当前智能体上一步执行完成时的累计奖励等
+                obs, reward, termination, truncation, info = env.last() # simple_env.observe(), simple_spread.observation()
+                total_reward += reward
+                if termination or truncation:
+                    action = None
+                elif isinstance(obs, dict) and "action_mask" in obs:
+                    action = random.choice(np.flatnonzero(obs["action_mask"]))
+                else:
+                    action = env.action_space(agent).sample()
+                    # action = [0.5, 0.05, 0.05, 0.05, 0.05]
 
-        s = path.s[1]
-        d = path.d[1]
-        d_d = path.d_d[1]
-        d_dd = path.d_dd[1]
-        s_d = path.s_d[1]
-        s_dd = path.s_dd[1]
+                # 最后一个智能体时，会更新整个地图
+                env.step(action)    # simple_env.py/step()
 
-        if render:
-            area = 30
-            plt.cla()
-            # for stopping simulation with the esc key.
-            plt.gcf().canvas.mpl_connect(
-                'key_release_event',
-                lambda event: [exit(0) if event.key == 'escape' else None])
-            plt.plot(tx, ty)
-            plt.plot(ob[:, 0], ob[:, 1], "xk")
-            plt.plot(path.x[1:], path.y[1:], "-or")
-            plt.plot(path.x[1], path.y[1], "vc")
-            plt.xlim(path.x[1] - area, path.x[1] + area)
-            plt.ylim(path.y[1] - area, path.y[1] + area)
-            plt.title("v[km/h]:" + str(s_d * 3.6)[0:4])
-            plt.grid(True)
-            plt.pause(0.0001)
+        completed_episodes += 1
 
-        if np.hypot(path.x[1] - tx[-1], path.y[1] - ty[-1]) <= 2.0:
-            print("Goal")
-            break
+    if render:
+        env.close()
+
+    print("Average total reward", total_reward / episodes)
+
+    return total_reward
+
 
 if __name__ == "__main__":
-    main()
+    # env = mapf_v1.env(max_cycles=100, render_mode='human')  # 参数传给raw_env.__init__()
+    env = mapf_v1.parallel_env(max_cycles=100, render_mode='human')
+    # parallel_api_test(parallel_env, num_cycles=1000)
+    random_demo(env, render=False, episodes=100)
+
 

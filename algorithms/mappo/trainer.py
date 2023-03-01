@@ -1,26 +1,18 @@
-"""
-# @Time    : 2021/7/1 6:52 下午
-# @Author  : hezhiqiang01
-# @Email   : hezhiqiang01@baidu.com
-# @File    : r_mappo.py
-"""
-
 import numpy as np
 import torch
 import torch.nn as nn
 from utils.util import get_gard_norm, huber_loss, mse_loss
 from utils.valuenorm import ValueNorm
-from algorithms.utils.util import check
+from utils.typecasting import n2t
 
 
-class RMAPPO():
+class Trainer:
     """
     Trainer class for MAPPO to update policies.
     :param args: (argparse.Namespace) arguments containing relevant model, policy, and env information.
     :param policy: (R_MAPPO_Policy) policy to update.
     :param device: (torch.device) specifies the device to run on (cpu/gpu).
     """
-
     def __init__(self,
                  args,
                  policy,
@@ -36,7 +28,7 @@ class RMAPPO():
         self.data_chunk_length = args.data_chunk_length
         self.value_loss_coef = args.value_loss_coef
         self.entropy_coef = args.entropy_coef
-        self.max_grad_norm = args.max_grad_norm
+        self.max_grad_norm = args.max_grad_norm       
         self.huber_delta = args.huber_delta
 
         self._use_recurrent_policy = args.use_recurrent_policy
@@ -48,14 +40,13 @@ class RMAPPO():
         self._use_valuenorm = args.use_valuenorm
         self._use_value_active_masks = args.use_value_active_masks
         self._use_policy_active_masks = args.use_policy_active_masks
-
-        assert (self._use_popart and self._use_valuenorm) == False, (
-            "self._use_popart and self._use_valuenorm can not be set True simultaneously")
-
+        
+        assert (self._use_popart and self._use_valuenorm) == False, ("self._use_popart and self._use_valuenorm can not be set True simultaneously")
+        
         if self._use_popart:
             self.value_normalizer = self.policy.critic.v_out
         elif self._use_valuenorm:
-            self.value_normalizer = ValueNorm(1, device=self.device)
+            self.value_normalizer = ValueNorm(1).to(self.device)
         else:
             self.value_normalizer = None
 
@@ -70,7 +61,7 @@ class RMAPPO():
         :return value_loss: (torch.Tensor) value function loss.
         """
         value_pred_clipped = value_preds_batch + (values - value_preds_batch).clamp(-self.clip_param,
-                                                                                    self.clip_param)
+                                                                                        self.clip_param)
         if self._use_popart or self._use_valuenorm:
             self.value_normalizer.update(return_batch)
             error_clipped = self.value_normalizer.normalize(return_batch) - value_pred_clipped
@@ -115,19 +106,19 @@ class RMAPPO():
         value_preds_batch, return_batch, masks_batch, active_masks_batch, old_action_log_probs_batch, \
         adv_targ, available_actions_batch = sample
 
-        old_action_log_probs_batch = check(old_action_log_probs_batch).to(**self.tpdv)
-        adv_targ = check(adv_targ).to(**self.tpdv)
-        value_preds_batch = check(value_preds_batch).to(**self.tpdv)
-        return_batch = check(return_batch).to(**self.tpdv)
-        active_masks_batch = check(active_masks_batch).to(**self.tpdv)
+        old_action_log_probs_batch = n2t(old_action_log_probs_batch, **self.tpdv)
+        adv_targ = n2t(adv_targ, **self.tpdv)
+        value_preds_batch = n2t(value_preds_batch, **self.tpdv)
+        return_batch = n2t(return_batch, **self.tpdv)
+        active_masks_batch = n2t(active_masks_batch, **self.tpdv)
 
         # Reshape to do in a single forward pass for all steps
         values, action_log_probs, dist_entropy = self.policy.evaluate_actions(share_obs_batch,
-                                                                              obs_batch,
-                                                                              rnn_states_batch,
-                                                                              rnn_states_critic_batch,
-                                                                              actions_batch,
-                                                                              masks_batch,
+                                                                              obs_batch, 
+                                                                              rnn_states_batch, 
+                                                                              rnn_states_critic_batch, 
+                                                                              actions_batch, 
+                                                                              masks_batch, 
                                                                               available_actions_batch,
                                                                               active_masks_batch)
         # actor update
@@ -190,6 +181,7 @@ class RMAPPO():
         mean_advantages = np.nanmean(advantages_copy)
         std_advantages = np.nanstd(advantages_copy)
         advantages = (advantages - mean_advantages) / (std_advantages + 1e-5)
+        
 
         train_info = {}
 
@@ -209,6 +201,7 @@ class RMAPPO():
                 data_generator = buffer.feed_forward_generator(advantages, self.num_mini_batch)
 
             for sample in data_generator:
+
                 value_loss, critic_grad_norm, policy_loss, dist_entropy, actor_grad_norm, imp_weights \
                     = self.ppo_update(sample, update_actor)
 
@@ -223,7 +216,7 @@ class RMAPPO():
 
         for k in train_info.keys():
             train_info[k] /= num_updates
-
+ 
         return train_info
 
     def prep_training(self):
@@ -233,4 +226,3 @@ class RMAPPO():
     def prep_rollout(self):
         self.policy.actor.eval()
         self.policy.critic.eval()
-

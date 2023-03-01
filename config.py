@@ -28,7 +28,7 @@ def get_config(argv):
                         help="by default, make sure random seed effective. if set, bypass such function.")
     parser.add_argument("--n_training_threads", type=int, default=1,
                         help="Number of torch threads for training")
-    parser.add_argument("--n_rollout_threads", type=int, default=5,
+    parser.add_argument("--n_rollout_threads", type=int, default=1,
                         help="Number of parallel envs for training rollouts")
     parser.add_argument("--n_eval_rollout_threads", type=int, default=1,
                         help="Number of parallel envs for evaluating rollouts")
@@ -38,15 +38,17 @@ def get_config(argv):
                         help='Number of environment steps to train (default: 10e6)')
     parser.add_argument("--user_name", type=str, default='marl',
                         help="[for wandb usage], to specify user's name for simply collecting training data.")
+    parser.add_argument("--use_wandb", action='store_true', default=False,
+                        help="[for wandb usage], by default True, will log date to wandb server. or else will use tensorboard to log data.")
     parser.add_argument("--model_dir", type=str, default=None,
                         help="by default None. set the path to pretrained model.")
 
     # env parameters
-    parser.add_argument("--env_name", type=str, default='MyEnv',
+    parser.add_argument("--env_name", type=str, default='MPE',
                         help="specify the name of environment")
-    parser.add_argument('--scenario_name', type=str, default='MyEnv',
+    parser.add_argument('--scenario_name', type=str, default='MAPF',
                         help="Which scenario to run on")
-    parser.add_argument('--num_agents', type=int, default=2, help="number of players")
+    parser.add_argument('--num_agents', type=int, default=2, help="number of agents")
     parser.add_argument("--num_landmarks", type=int, default=2, help="number of landmarks")
     parser.add_argument("--use_obs_instead_of_state", action='store_true', default=False,
                         help="Whether to use global state or concatenated obs")
@@ -65,7 +67,7 @@ def get_config(argv):
     parser.add_argument("--use_stacked_frames", action='store_true', default=False,
                         help="Whether to use stacked_frames")
     parser.add_argument("--hidden_size", type=int, default=64,
-                        help="Dimension of hidden layers for actor/critic networks") 
+                        help="Dimension of hidden layers for actor/critic networks")
     parser.add_argument("--layer_N", type=int, default=1,
                         help="Number of layers for actor/critic networks")
     parser.add_argument("--use_ReLU", action='store_false', default=True,
