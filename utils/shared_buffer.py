@@ -49,47 +49,32 @@ class SharedReplayBuffer(object):
         if type(share_obs_shape[-1]) == list:
             share_obs_shape = share_obs_shape[:1]
 
-        # self.state = np.zeros((self.episode_length + 1, self.n_rollout_threads, num_agents, *share_obs_shape), dtype=np.float32)
-        # self.observations = np.zeros((self.episode_length + 1, self.n_rollout_threads, num_agents, *obs_shape), dtype=np.float32)
-        # self.rnn_states = np.zeros(
-        #     (self.episode_length + 1, self.n_rollout_threads, num_agents, self.recurrent_N, self.hidden_size),
-        #     dtype=np.float32)
-        # self.rnn_states_critic = np.zeros_like(self.rnn_states)
-        # self.value_preds = np.zeros(
-        #     (self.episode_length + 1, self.n_rollout_threads, num_agents, 1), dtype=np.float32)
-        # self.returns = np.zeros_like(self.value_preds)
-
-        self.state = np.zeros((self.episode_length + 1, num_agents, *share_obs_shape), dtype=np.float32)
-        self.observations = np.zeros((self.episode_length + 1, num_agents, *obs_shape), dtype=np.float32)
+        self.state = np.zeros((self.episode_length + 1, self.n_rollout_threads, num_agents, *share_obs_shape), dtype=np.float32)
+        self.observations = np.zeros((self.episode_length + 1, self.n_rollout_threads, num_agents, *obs_shape), dtype=np.float32)
         self.rnn_states = np.zeros(
-            (self.episode_length + 1, num_agents, self.recurrent_N, self.hidden_size), dtype=np.float32
-        )
+            (self.episode_length + 1, self.n_rollout_threads, num_agents, self.recurrent_N, self.hidden_size),
+            dtype=np.float32)
         self.rnn_states_critic = np.zeros_like(self.rnn_states)
-
-        self.value_preds = np.zeros((self.episode_length + 1, num_agents, 1), dtype=np.float32)
+        self.value_preds = np.zeros(
+            (self.episode_length + 1, self.n_rollout_threads, num_agents, 1), dtype=np.float32)
         self.returns = np.zeros_like(self.value_preds)
 
         if act_space.__class__.__name__ == 'Discrete':
-            self.available_actions = np.ones((self.episode_length + 1, num_agents, act_space.n),
+            self.available_actions = np.ones((self.episode_length + 1, self.n_rollout_threads, num_agents, act_space.n),
                                              dtype=np.float32)
         else:
             self.available_actions = None
 
         act_shape = get_shape_from_act_space(act_space)
 
-        # self.actions = np.zeros(
-        #     (self.episode_length, self.n_rollout_threads, num_agents, act_shape), dtype=np.float32)
-        # self.action_log_probs = np.zeros(
-        #     (self.episode_length, self.n_rollout_threads, num_agents, act_shape), dtype=np.float32)
-        # self.rewards = np.zeros(
-        #     (self.episode_length, self.n_rollout_threads, num_agents, 1), dtype=np.float32)
-        #
-        # self.masks = np.ones((self.episode_length + 1, self.n_rollout_threads, num_agents, 1), dtype=np.float32)
-        self.actions = np.zeros((self.episode_length, num_agents, act_shape), dtype=np.float32)
-        self.action_log_probs = np.zeros((self.episode_length, num_agents, act_shape), dtype=np.float32)
-        self.rewards = np.zeros((self.episode_length, num_agents, 1), dtype=np.float32)
+        self.actions = np.zeros(
+            (self.episode_length, self.n_rollout_threads, num_agents, act_shape), dtype=np.float32)
+        self.action_log_probs = np.zeros(
+            (self.episode_length, self.n_rollout_threads, num_agents, act_shape), dtype=np.float32)
+        self.rewards = np.zeros(
+            (self.episode_length, self.n_rollout_threads, num_agents, 1), dtype=np.float32)
 
-        self.masks = np.ones((self.episode_length + 1, num_agents, 1), dtype=np.float32)
+        self.masks = np.ones((self.episode_length + 1, self.n_rollout_threads, num_agents, 1), dtype=np.float32)
         self.bad_masks = np.ones_like(self.masks)
         self.active_masks = np.ones_like(self.masks)
 
@@ -249,16 +234,16 @@ class SharedReplayBuffer(object):
         :param num_mini_batch: (int) number of minibatches to split the batch into.
         :param mini_batch_size: (int) number of samples in each minibatch.
         """
-        episode_length, num_agents = self.rewards.shape[0:2]
-        batch_size = episode_length * num_agents
+        episode_length, n_rollout_threads, num_agents = self.rewards.shape[0:3]
+        batch_size = n_rollout_threads * episode_length * num_agents
 
         if mini_batch_size is None:
             assert batch_size >= num_mini_batch, (
-                "PPO requires the number of processes () "
+                "PPO requires the number of processes ({}) "
                 "* number of steps ({}) * number of agents ({}) = {} "
                 "to be greater than or equal to the number of PPO mini batches ({})."
-                "".format(episode_length, num_agents,
-                          episode_length * num_agents,
+                "".format(n_rollout_threads, episode_length, num_agents,
+                          n_rollout_threads * episode_length * num_agents,
                           num_mini_batch))
             mini_batch_size = batch_size // num_mini_batch
 
@@ -310,12 +295,12 @@ class SharedReplayBuffer(object):
         :param advantages: (np.ndarray) advantage estimates.
         :param num_mini_batch: (int) number of minibatches to split the batch into.
         """
-        episode_length, num_agents = self.rewards.shape[0:2]
-        batch_size = num_agents
-        assert num_agents >= num_mini_batch, (
-            "PPO requires the number of processes ()* number of agents ({}) "
+        episode_length, n_rollout_threads, num_agents = self.rewards.shape[0:3]
+        batch_size = n_rollout_threads * num_agents
+        assert n_rollout_threads * num_agents >= num_mini_batch, (
+            "PPO requires the number of processes ({})* number of agents ({}) "
             "to be greater than or equal to the number of "
-            "PPO mini batches ({}).".format(num_agents, num_mini_batch))
+            "PPO mini batches ({}).".format(n_rollout_threads, num_agents, num_mini_batch))
         num_envs_per_batch = batch_size // num_mini_batch
         perm = torch.randperm(batch_size).numpy()
 
@@ -408,8 +393,8 @@ class SharedReplayBuffer(object):
         :param num_mini_batch: (int) number of minibatches to split the batch into.
         :param data_chunk_length: (int) length of sequence chunks with which to train RNN.
         """
-        episode_length, num_agents = self.rewards.shape[0:2]
-        batch_size = episode_length * num_agents
+        episode_length, n_rollout_threads, num_agents = self.rewards.shape[0:3]
+        batch_size = n_rollout_threads * episode_length * num_agents
         data_chunks = batch_size // data_chunk_length  # [C=r*T*M/L]
         mini_batch_size = data_chunks // num_mini_batch
 

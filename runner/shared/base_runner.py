@@ -69,14 +69,14 @@ class Runner(object):
             if not os.path.exists(self.save_dir):
                 os.makedirs(self.save_dir)
 
-        # 将基类AECEnv中的attribute转换成网络输入
-        obs_space = list(self.envs.observation_spaces.values())[0]    # 认为所有智能体的观测维度一样，取字典中第一个值
-        action_space = list(self.envs.action_spaces.values())[0]      # 认为所有智能体的动作维度一样，取字典中第一个值
-        state_space = self.envs.state_space
+        # 将env_wrapper中的spaces转换成网络输入
 
+        observation_space = self.envs.observation_spaces[0] # Box(-inf, inf, (dim, ), float32)
+        state_space = self.envs.state_space                 # Box(-inf, inf, (dim, ), float32)
+        action_space = self.envs.action_spaces[0]           # Discrete(dim)
         # policy network
         self.policy = Policy(self.args,
-                             obs_space,
+                             observation_space,
                              state_space,
                              action_space,
                              device=self.device)
@@ -90,7 +90,7 @@ class Runner(object):
         # buffer
         self.buffer = SharedReplayBuffer(self.args,
                                          self.num_agents,
-                                         obs_space,
+                                         observation_space,
                                          state_space,
                                          action_space)
 
@@ -117,10 +117,12 @@ class Runner(object):
     def compute(self):
         """Calculate returns for the collected data."""
         self.trainer.prep_rollout()
-        next_values = self.trainer.policy.get_values(self.buffer.state[-1],
-                                                     self.buffer.rnn_states_critic[-1],
-                                                     self.buffer.masks[-1])
-        next_values = t2n(next_values)
+
+        next_values = self.trainer.policy.get_values(np.concatenate(self.buffer.state[-1]),
+                                                     np.concatenate(self.buffer.rnn_states_critic[-1]),
+                                                     np.concatenate(self.buffer.masks[-1]))
+        next_values = np.array(np.split(t2n(next_values), self.n_rollout_threads))
+        self.buffer.compute_returns(next_values, self.trainer.value_normalizer)
         self.buffer.compute_returns(next_values, self.trainer.value_normalizer)
     
     def train(self):

@@ -9,13 +9,14 @@ import time
 import numpy as np
 import torch
 from runner.shared.base_runner import Runner
-from utils.typecasting import t2n, space_dict_to_dim, space_dict_to_shape
+from utils.typecasting import t2n
 import wandb
 import imageio
 
 
 class MPERunner(Runner):
     """Runner class to perform training, evaluation. and data collection for the MPEs. See parent class for details."""
+
     def __init__(self, config):
         super(MPERunner, self).__init__(config)
 
@@ -32,13 +33,10 @@ class MPERunner(Runner):
             for step in range(self.episode_length):
                 # take actions by policy
                 values, actions, action_log_probs, rnn_states, rnn_states_critic = self.collect(step)
-                    
-                # step
-                actions_dict = {}
-                for i in range(self.num_agents):
-                    actions_dict[self.envs.agents[i]] = actions[i][0]
-                # step返回的都是dict
-                observations, rewards, terminations, truncations, infos = self.envs.step(actions_dict)   # mapf.py/observation()
+
+                # step, shape: (num_envs * num_agents * dim)
+                observations, rewards, terminations, truncations, infos = self.envs.step(
+                    actions)  # mapf.py/observation()
 
                 # insert data into buffer
                 data = observations, rewards, terminations, truncations, infos, values, actions, action_log_probs, rnn_states, rnn_states_critic
@@ -47,10 +45,10 @@ class MPERunner(Runner):
             # compute return and update network
             self.compute()
             train_infos = self.train()
-            
+
             # post process
             total_num_steps = (episode + 1) * self.episode_length * self.n_rollout_threads
-            
+
             # save model
             if episode % self.save_interval == 0 or episode == episodes - 1:
                 self.save()
@@ -59,14 +57,14 @@ class MPERunner(Runner):
             if episode % self.log_interval == 0:
                 end = time.time()
                 print("\n Scenario {} Algo {} Exp {} updates {}/{} episodes, total num timesteps {}/{}, FPS {}.\n"
-                        .format(self.all_args.scenario_name,
-                                self.algorithm_name,
-                                self.experiment_name,
-                                episode,
-                                episodes,
-                                total_num_steps,
-                                self.num_env_steps,
-                                int(total_num_steps / (end - start))))
+                      .format(self.args.scenario_name,
+                              self.algorithm_name,
+                              self.experiment_name,
+                              episode,
+                              episodes,
+                              total_num_steps,
+                              self.num_env_steps,
+                              int(total_num_steps / (end - start))))
 
                 if self.env_name == "MPE":
                     env_infos = {}
@@ -89,13 +87,14 @@ class MPERunner(Runner):
 
     def warmup(self):
         # reset env
-        observations_dict = self.envs.reset()
-        observations = np.array(list(observations_dict.values()))   # (num_agents, obs)
+        observations = self.envs.reset()  # (num_envs, num_agents, obs_dim)
 
         # replay buffer
         if self.use_centralized_V:
-            # state = observations.reshape(self.n_rollout_threads, -1) # (threads, observations)
-            state = np.expand_dims(observations.reshape(-1), 0).repeat(self.num_agents, 0)  # (num_agents, state)
+            # (num_envs, num_agents, state_dim)
+            state = observations.reshape(self.n_rollout_threads, -1)
+            state = np.expand_dims(state, 1).repeat(self.num_agents, axis=1)
+            # state = np.expand_dims(observations.reshape(-1), 1).repeat(self.num_agents, 1)  # (num_agents, state_dim)
         else:
             state = observations
 
@@ -105,70 +104,47 @@ class MPERunner(Runner):
 
     @torch.no_grad()
     def collect(self, step):
-        # self.trainer.prep_rollout()
-        # # concatenate: (2, 2, 10) --> (4, 10), (threads, num_agents, obs_dim)
-        # value, action, action_log_prob, rnn_states, rnn_states_critic \
-        #     = self.trainer.policy.get_actions(np.concatenate(self.buffer.state[step]),
-        #                                       np.concatenate(self.buffer.observations[step]),
-        #                                       np.concatenate(self.buffer.rnn_states[step]),
-        #                                       np.concatenate(self.buffer.rnn_states_critic[step]),
-        #                                       np.concatenate(self.buffer.masks[step]))
-        # # [self.envs, agents, dim]
-        # values = np.array(np.split(t2n(value), self.n_rollout_threads))     # (4, 10) --> (2, 2, 10)
-        # actions = np.array(np.split(t2n(action), self.n_rollout_threads))
-        # action_log_probs = np.array(np.split(t2n(action_log_prob), self.n_rollout_threads))
-        # rnn_states = np.array(np.split(t2n(rnn_states), self.n_rollout_threads))
-        # rnn_states_critic = np.array(np.split(t2n(rnn_states_critic), self.n_rollout_threads))
         self.trainer.prep_rollout()
-        values, actions, action_log_prob, rnn_states, rnn_states_critic \
-            = self.trainer.policy.get_actions(self.buffer.state[step],
-                                              self.buffer.observations[step],
-                                              self.buffer.rnn_states[step],
-                                              self.buffer.rnn_states_critic[step],
-                                              self.buffer.masks[step])
-
-        values = t2n(values)    # (num_agents, )
-        actions = t2n(actions)  # (num_agents, )
-        action_log_probs = t2n(action_log_prob)
-        rnn_states = t2n(rnn_states)
-        rnn_states_critic = t2n(rnn_states_critic)
-        # # rearrange action
-        # action_dim = space_dict_to_dim(self.envs.action_spaces)
-        # actions_env = np.squeeze(np.eye(action_dim)[actions], 1)    # onehot
-        # if self.envs.action_space[0].__class__.__name__ == 'MultiDiscrete':
-        #     for i in range(self.envs.action_space[0].shape):
-        #         uc_actions_env = np.eye(self.envs.action_space[0].high[i] + 1)[actions[:, :, i]]
-        #         if i == 0:
-        #             actions_env = uc_actions_env
-        #         else:
-        #             actions_env = np.concatenate((actions_env, uc_actions_env), axis=2)
-        # elif self.envs.action_space[0].__class__.__name__ == 'Discrete':
-        #     actions_env = np.squeeze(np.eye(self.envs.action_space[0].n)[actions], 2)
-        # else:
-        #     raise NotImplementedError
+        # concatenate: (2, 2, 10) --> (4, 10), (threads, num_agents, obs_dim)
+        value, action, action_log_prob, rnn_states, rnn_states_critic \
+            = self.trainer.policy.get_actions(np.concatenate(self.buffer.state[step]),
+                                              np.concatenate(self.buffer.observations[step]),
+                                              np.concatenate(self.buffer.rnn_states[step]),
+                                              np.concatenate(self.buffer.rnn_states_critic[step]),
+                                              np.concatenate(self.buffer.masks[step]))
+        # [self.envs, agents, dim]
+        values = np.array(np.split(t2n(value), self.n_rollout_threads))  # (4, 10) --> (2, 2, 10)
+        actions = np.array(np.split(t2n(action), self.n_rollout_threads))
+        action_log_probs = np.array(np.split(t2n(action_log_prob), self.n_rollout_threads))
+        rnn_states = np.array(np.split(t2n(rnn_states), self.n_rollout_threads))
+        rnn_states_critic = np.array(np.split(t2n(rnn_states_critic), self.n_rollout_threads))
 
         return values, actions, action_log_probs, rnn_states, rnn_states_critic
 
     def insert(self, data):
         observations, rewards, terminations, truncations, infos, values, actions, action_log_probs, rnn_states, rnn_states_critic = data
 
-        # 为了适配后面的接口，把dict写成list
-        rewards = np.array(list(rewards.values())).reshape(-1, 1)
-        dones = np.array([b1 or b2 for b1, b2 in zip(list(terminations.values()), list(truncations.values()))])
-
-        rnn_states[dones == True] = np.zeros(((dones == True).sum(), self.recurrent_N, self.hidden_size), dtype=np.float32)
-        rnn_states_critic[dones == True] = np.zeros(((dones == True).sum(), *self.buffer.rnn_states_critic.shape[2:]), dtype=np.float32)
-        masks = np.ones((self.num_agents, 1), dtype=np.float32)
+        # dones if terminations or truncations
+        dones = np.array([b1 or b2 for t1, t2 in zip(terminations, truncations) for b1, b2 in zip(t1, t2)]).reshape(
+            terminations.shape)
+        rnn_states[dones == True] = np.zeros(((dones == True).sum(), self.recurrent_N, self.hidden_size),
+                                             dtype=np.float32)
+        rnn_states_critic[dones == True] = np.zeros(((dones == True).sum(), *self.buffer.rnn_states_critic.shape[3:]),
+                                                    dtype=np.float32)
+        masks = np.ones((self.n_rollout_threads, self.num_agents, 1), dtype=np.float32)
         masks[dones == True] = np.zeros(((dones == True).sum(), 1), dtype=np.float32)
 
+        # expand dim
+        rewards = np.expand_dims(rewards, axis=-1)
+
         if self.use_centralized_V:
-            # state = observations.reshape(self.n_rollout_threads, -1) # (threads, observations)
-            observations = np.array(list(observations.values()))  # (num_agents, obs)
-            state = np.expand_dims(observations.reshape(-1), 0).repeat(self.num_agents, 0)  # (num_agents, state)
+            state = observations.reshape(self.n_rollout_threads, -1)
+            state = np.expand_dims(state, 1).repeat(self.num_agents, axis=1)
         else:
             state = observations
 
-        self.buffer.insert(state, observations, rnn_states, rnn_states_critic, actions, action_log_probs, values, rewards, masks)
+        self.buffer.insert(state, observations, rnn_states, rnn_states_critic, actions, action_log_probs, values,
+                           rewards, masks)
 
     @torch.no_grad()
     def eval(self, total_num_steps):
@@ -181,15 +157,15 @@ class MPERunner(Runner):
         for eval_step in range(self.episode_length):
             self.trainer.prep_rollout()
             eval_action, eval_rnn_states = self.trainer.policy.act(np.concatenate(eval_obs),
-                                                np.concatenate(eval_rnn_states),
-                                                np.concatenate(eval_masks),
-                                                deterministic=True)
+                                                                   np.concatenate(eval_rnn_states),
+                                                                   np.concatenate(eval_masks),
+                                                                   deterministic=True)
             eval_actions = np.array(np.split(t2n(eval_action), self.n_eval_rollout_threads))
             eval_rnn_states = np.array(np.split(t2n(eval_rnn_states), self.n_eval_rollout_threads))
-            
+
             if self.eval_envs.action_space[0].__class__.__name__ == 'MultiDiscrete':
                 for i in range(self.eval_envs.action_space[0].shape):
-                    eval_uc_actions_env = np.eye(self.eval_envs.action_space[0].high[i]+1)[eval_actions[:, :, i]]
+                    eval_uc_actions_env = np.eye(self.eval_envs.action_space[0].high[i] + 1)[eval_actions[:, :, i]]
                     if i == 0:
                         eval_actions_env = eval_uc_actions_env
                     else:
@@ -203,7 +179,8 @@ class MPERunner(Runner):
             eval_obs, eval_rewards, eval_dones, eval_infos = self.eval_envs.step(eval_actions_env)
             eval_episode_rewards.append(eval_rewards)
 
-            eval_rnn_states[eval_dones == True] = np.zeros(((eval_dones == True).sum(), self.recurrent_N, self.hidden_size), dtype=np.float32)
+            eval_rnn_states[eval_dones == True] = np.zeros(
+                ((eval_dones == True).sum(), self.recurrent_N, self.hidden_size), dtype=np.float32)
             eval_masks = np.ones((self.n_eval_rollout_threads, self.num_agents, 1), dtype=np.float32)
             eval_masks[eval_dones == True] = np.zeros(((eval_dones == True).sum(), 1), dtype=np.float32)
 
@@ -228,8 +205,8 @@ class MPERunner(Runner):
     #         else:
     #             envs.render('human')
     #
-    #         rnn_states = np.zeros((self.num_agents, self.recurrent_N, self.hidden_size), dtype=np.float32)
-    #         masks = np.ones((self.num_agents, 1), dtype=np.float32)
+    #         rnn_states = np.zeros((self.n_rollout_threads, self.num_agents, self.recurrent_N, self.hidden_size), dtype=np.float32)
+    #         masks = np.ones((self.n_rollout_threads, self.num_agents, 1), dtype=np.float32)
     #
     #         episode_rewards = []
     #

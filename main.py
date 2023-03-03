@@ -58,6 +58,7 @@ def random_demo(env, render=True, episodes=1):
 if __name__ == "__main__":
     # env = mapf_v1.env(max_cycles=100, render_mode='human')  # 参数传给raw_env.__init__()
     env = mapf_v1.parallel_env(max_cycles=100, render_mode='human')
+    env.reset(seed=1)
     # parallel_api_test(parallel_env, num_cycles=1000)
     random_demo(env, render=False, episodes=100)
 

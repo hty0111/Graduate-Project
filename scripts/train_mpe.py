@@ -14,47 +14,38 @@ import numpy as np
 from pathlib import Path
 import torch
 from config import get_config
-# from envs.mpe.MPE_env import MPEEnv
-# from envs.env_wrappers import SubprocVecEnv, DummyVecEnv
+from envs.env_wrappers import SubprocShareVecEnv, DummyShareVecEnv
 from envs.mpe import mapf_v1
 
 """Train script for MPEs."""
 
 
-# def make_train_env(args):
-#     def get_env_fn(rank):
-#         def init_env():
-#             if args.env_name == "MPE":
-#                 env = MPEEnv(args)
-#             else:
-#                 print("Can not support the " +
-#                       args.env_name + "environment.")
-#                 raise NotImplementedError
-#             env.seed(args.seed + rank * 1000)
-#             return env
-#         return init_env
-#     if args.n_rollout_threads == 1:
-#         return DummyVecEnv([get_env_fn(0)])
-#     else:
-#         return SubprocVecEnv([get_env_fn(i) for i in range(args.n_rollout_threads)])
-#
-#
-# def make_eval_env(args):
-#     def get_env_fn(rank):
-#         def init_env():
-#             if args.env_name == "MPE":
-#                 env = MPEEnv(args)
-#             else:
-#                 print("Can not support the " +
-#                       args.env_name + "environment.")
-#                 raise NotImplementedError
-#             env.seed(args.seed * 50000 + rank * 10000)
-#             return env
-#         return init_env
-#     if args.n_eval_rollout_threads == 1:
-#         return DummyVecEnv([get_env_fn(0)])
-#     else:
-#         return SubprocVecEnv([get_env_fn(i) for i in range(args.n_eval_rollout_threads)])
+def make_train_env(args):
+    def get_env_fn(rank):
+        def init_env():
+            env = mapf_v1.parallel_env(num_agents=args.num_agents)
+            env.reset(seed=args.seed + rank * 1000)
+            return env
+        return init_env
+
+    if args.n_rollout_threads == 1:
+        return DummyShareVecEnv([get_env_fn(0)])
+    else:
+        return SubprocShareVecEnv([get_env_fn(i) for i in range(args.n_rollout_threads)])
+
+
+def make_eval_env(args):
+    def get_env_fn(rank):
+        def init_env():
+            env = mapf_v1.parallel_env(num_agents=args.num_agents)
+            env.reset(seed=args.seed * 50000 + rank * 10000)
+            return env
+        return init_env
+
+    if args.n_rollout_threads == 1:
+        return DummyShareVecEnv([get_env_fn(0)])
+    else:
+        return SubprocShareVecEnv([get_env_fn(i) for i in range(args.n_eval_rollout_threads)])
 
 
 def main(argv):
@@ -74,7 +65,7 @@ def main(argv):
     else:
         raise NotImplementedError
 
-    assert (args.share_policy == True and args.scenario_name == 'simple_speaker_listener') == False, (
+    assert (args.share_policy is True and args.scenario_name == 'simple_speaker_listener') is False, (
         "The simple_speaker_listener scenario can not use shared policy. Please check the config.py.")
 
     # cuda
@@ -133,17 +124,14 @@ def main(argv):
     np.random.seed(args.seed)
 
     # env init
-    num_agents = args.num_agents
-    # envs = make_train_env(args)
-    # eval_envs = make_eval_env(args) if args.use_eval else None
-    envs = mapf_v1.parallel_env(num_agents=num_agents)
-    eval_envs = mapf_v1.parallel_env()
+    envs = make_train_env(args)
+    eval_envs = make_eval_env(args) if args.use_eval else None
 
     config = {
         "args": args,
         "envs": envs,
         "eval_envs": eval_envs,
-        "num_agents": num_agents,
+        "num_agents": args.num_agents,
         "device": device,
         "run_dir": run_dir
     }

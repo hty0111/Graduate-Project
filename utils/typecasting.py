@@ -18,7 +18,7 @@ def t2n(x: torch.Tensor) -> np.ndarray:
     """Convert torch tensor to a numpy array."""
     return x.detach().cpu().numpy()
 
-def space_dict_to_space(x: dict) -> gym.spaces.Space:
+def dict_to_space(x: dict) -> gym.spaces.Space:
     return list(x.values())[0]
 
 def space_to_shape(x) -> tuple:
@@ -34,20 +34,32 @@ def space_to_shape(x) -> tuple:
 def shape_to_dim(x: tuple) -> int:
     return x[0]
 
-def space_dict_to_shape(x: dict) -> tuple:
-    return space_to_shape(space_dict_to_space(x))
+def dict_to_shape(x: dict) -> tuple:
+    return space_to_shape(dict_to_space(x))
 
 def space_to_dim(x) -> int:
     return shape_to_dim(space_to_shape(x))
 
-def space_dict_to_dim(x: dict) -> int:
-    return shape_to_dim(space_dict_to_shape(x))
+def dict_to_dim(x: dict) -> int:
+    return shape_to_dim(dict_to_shape(x))
 
-def dict_to_value_list(x: dict) -> list:
-    return list(x.values())
+def dict_to_array(x: dict) -> np.ndarray:
+    assert isinstance(x, dict)
+    return np.array(list(x.values()))
 
+# def _flatten_obs(x: dict):
+#     assert isinstance(x, dict)
+#     assert len(x) > 0
+#
+#     if isinstance(x[0], dict):
+#         keys = x[0].keys()
+#         return {k: np.stack([o[k] for o in x]) for k in keys}
+#     else:
+#         return np.stack(x)
 
 if __name__ == "__main__":
-    obs = np.array([0, 1])
-    print(space_to_shape(obs))
+    d = {"0": [0, 1], "1": [2, 3]}
+    l = dict_to_array(d)
+    print(l)
+
 
