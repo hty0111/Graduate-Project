@@ -27,8 +27,7 @@ class ShareVecEnv(ABC):
         'render.modes': ['human', 'rgb_array']
     }
 
-    def __init__(self, num_envs, observation_spaces, state_space, action_spaces):
-        self.num_envs = num_envs
+    def __init__(self, observation_spaces, state_space, action_spaces):
         self.observation_spaces = observation_spaces    # List[gym.spaces]
         self.state_space = state_space                  # gym.spaces
         self.action_spaces = action_spaces              # List[gym.spaces]
@@ -188,7 +187,7 @@ class SubprocShareVecEnv(ShareVecEnv, ABC):
 
         self.remotes[0].send(('get_spaces', None))
         observation_spaces, state_space, action_spaces = self.remotes[0].recv()
-        ShareVecEnv.__init__(self, len(env_fns), observation_spaces, state_space, action_spaces)
+        ShareVecEnv.__init__(self, observation_spaces, state_space, action_spaces)
 
     def step_async(self, actions):
         for remote, action in zip(self.remotes, actions):
@@ -237,29 +236,36 @@ class DummyShareVecEnv(ShareVecEnv, ABC):
     def __init__(self, env_fns):
         self.envs = [fn() for fn in env_fns]
         env = self.envs[0]
-        ShareVecEnv.__init__(self, len(env_fns), env.observation_space, env.state_space, env.action_space)
-        self.actions = None
+        ShareVecEnv.__init__(self,
+                             dict_to_array(env.observation_spaces),
+                             env.state_space,
+                             dict_to_array(env.action_spaces))
+        self.actions = []
 
-    def step_async(self, actions):
-        self.actions = actions
+    def step_async(self, actions: np.ndarray):
+        action_dict = {}
+        for i in range(actions.shape[1]):
+            action_dict[self.envs[0].agents[i]] = actions[0][i][0]
+        self.actions.append(action_dict)
 
     def step_wait(self):
-        results = [env.step(a) for (a, env) in zip(self.actions, self.envs)]
+        results = [tuple(map(dict_to_array, env.step(a))) for (a, env) in zip(self.actions, self.envs)]
         obs, rews, terminations, truncations, infos = map(np.array, zip(*results))
+        dones = np.array([b1 or b2 for t1, t2 in zip(terminations, truncations) for b1, b2 in zip(t1, t2)]).reshape(
+            terminations.shape)
+        for (i, done) in enumerate(dones):
+            if 'bool' in done.__class__.__name__:
+                if done:
+                    obs[i] = dict_to_array(self.envs[i].reset())
+            else:
+                if np.all(done):
+                    obs[i] = dict_to_array(self.envs[i].reset())
 
-        # for (i, done) in enumerate(dones):
-        #     if 'bool' in done.__class__.__name__:
-        #         if done:
-        #             obs[i] = self.envs[i].reset()
-        #     else:
-        #         if np.all(done):
-        #             obs[i] = self.envs[i].reset()
-
-        self.actions = None
+        self.actions = []
         return obs, rews, terminations, truncations, infos
 
     def reset(self):
-        obs = [dict_to_array(env.reset()) for env in self.envs]
+        obs = np.array([dict_to_array(env.reset()) for env in self.envs])
         return obs
 
     def close(self):
