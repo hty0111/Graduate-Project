@@ -1,11 +1,12 @@
 """
-Description: 
-version: v1.0
 Author: HTY
-Date: 2023-01-29 16:35:26
+Email: 1044213317@qq.com
+Date: 2023-01-29 16:35
+Description:
 """
 
 import numpy as np
+
 
 class QuarticPolynomial:
 

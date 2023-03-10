@@ -9,11 +9,11 @@ import torch
 import torch.nn as nn
 from utils.util import init
 from utils.typecasting import n2t
-from algorithms.utils.cnn import CNNBase
-from algorithms.utils.mlp import MLPBase
-from algorithms.utils.rnn import RNNLayer
-from algorithms.utils.act import ACTLayer
-from algorithms.utils.popart import PopArt
+from algorithms.networks.cnn import CNNBase
+from algorithms.networks.mlp import MLPBase
+from algorithms.networks.rnn import RNNLayer
+from algorithms.networks.act import ACTLayer
+from algorithms.networks.popart import PopArt
 from utils.util import get_shape_from_obs_space
 
 

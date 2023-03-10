@@ -8,50 +8,23 @@ Description:
     (https://www.youtube.com/watch?v=Cj6tAQe7UCY)
 """
 
-
-from quintic_polynomial import QuinticPolynomial
-from cubic_spline import CubicSpline2D
+from .quintic_polynomial import QuinticPolynomial
+from .quartic_polynomial import QuarticPolynomial
+from .cubic_spline import CubicSpline2D
 
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
 
-# Parameter
-MAX_V = 20.0 / 3.6  # maximum speed [m/s]
-MIN_V = 5 / 3.6     # minimum speed [m/s]
-DELTA_V = 5.0 / 3.6  # target speed sampling length [m/s]
-
-MAX_D = 3.0  # maximum road width [m]
-DELTA_D = 1.0  # road width sampling length [m]
-
-MAX_T = 8.0  # max prediction time [s]
-MIN_T = 2.0  # min prediction time [s]
-DELTA_T = 2  # time tick [s]
-
-MAX_S = 30.0
-MIN_S = 10.0
-DELTA_S = 5.0
-
-MAX_A = 2.0  # maximum acceleration [m/ss]
-MAX_K = 1.0  # maximum curvature [1/m]
-ROBOT_RADIUS = 2.0  # robot radius [m]
-
-# cost weights
-K_J = 0.1
-K_T = 0.1
-K_D = 1.0
-K_LAT = 1.0
-K_LON = 1.0
-
-show_animation = True
-
 
 class FrenetPath:
     def __init__(self):
+        self.lat_traj = None
+        self.lon_traj = None
         self.index = 0
         self.t = []
 
-        self.d = []
+        self.d = []  # 左负右正
         self.d_d = []
         self.d_dd = []
         self.d_ddd = []
@@ -63,121 +36,192 @@ class FrenetPath:
         self.x = []
         self.y = []
         self.yaw = []
-        self.ds = []    # 用来算曲率
-        self.k = []
+        self.ds = []  # 用来算曲率
+        self.curvature = []
 
 
-def calc_frenet_paths(s, s_d, s_dd, d, d_d, d_dd):
-    frenet_paths = []
-    
-    for ti in np.arange(MIN_T, MAX_T + DELTA_T, DELTA_T):       # 轨迹时间
-        for di in np.arange(-MAX_D, MAX_D + DELTA_D, DELTA_D):  # 道路宽度
-            lat_traj = QuinticPolynomial(d, d_d, d_dd, di, 0.0, 0.0, ti)
-            fp = FrenetPath()
-            fp.t = [t for t in np.arange(0.0, ti, 0.2)]
-            fp.d = [lat_traj.calc_point(t) for t in fp.t]
-            fp.d_d = [lat_traj.calc_first_derivative(t) for t in fp.t]
-            fp.d_dd = [lat_traj.calc_second_derivative(t) for t in fp.t]
-            fp.d_ddd = [lat_traj.calc_third_derivative(t) for t in fp.t]
+class LatticePlanner:
+    # Parameter
+    MAX_V = 5  # maximum speed [m/s]
+    MIN_V = 1  # minimum speed [m/s]
+    DELTA_V = 1  # speed sampling length [m/s]
 
-            for vi in np.arange(MIN_V, MAX_V + DELTA_V, DELTA_V):  # 末端速度
-                for si in np.arange(MIN_S, MAX_S + DELTA_S, DELTA_S):      # 道路长度
-                    lon_traj = QuinticPolynomial(s, s_d, s_dd, s + si, vi, 0.0, ti)
+    MAX_D = 3.0  # maximum road width [m]
+    DELTA_D = 1.0  # road width sampling length [m]
+
+    MAX_T = 8.0  # max prediction time [s]
+    MIN_T = 4.0  # min prediction time [s]
+    DELTA_T = 2  # time tick [s]
+
+    MAX_S = 30.0  # max longitude distance [m]
+    MIN_S = 10.0  # min longitude distance [m]
+    DELTA_S = 5.0  # distance sampling length [m]
+
+    MAX_A = 2.0  # maximum acceleration [m/ss]
+    MAX_K = 1.0  # maximum curvature [1/m]
+    ROBOT_RADIUS = 2.0  # robot radius [m]
+
+    # cost weights
+    K_J = 0.1
+    K_T = 0.1
+    K_D = 1.0
+    K_LAT = 1.0
+    K_LON = 1.0
+
+    def __init__(self):
+        self.t_dim = int((self.MAX_T - self.MIN_T) / self.DELTA_T + 1)  # 3
+        self.v_dim = int((self.MAX_V - self.MIN_V) / self.DELTA_V + 1)  # 5
+        self.s_dim = int((self.MAX_S - self.MIN_S) / self.DELTA_S + 1)  # 5
+        self.d_dim = int((self.MAX_D + self.MAX_D) / self.DELTA_D + 1)  # 7
+        self.sample_dim = int(self.t_dim * self.v_dim * self.d_dim)
+
+    def calc_frenet_paths(self, s, s_d, s_dd, d, d_d, d_dd):
+        frenet_paths = []
+        index = 0
+
+        for ti in np.arange(self.MIN_T, self.MAX_T + self.DELTA_T, self.DELTA_T):  # 轨迹时间
+            for di in np.arange(-self.MAX_D, self.MAX_D + self.DELTA_D, self.DELTA_D):  # 道路宽度
+                lat_traj = QuinticPolynomial(d, d_d, d_dd, di, 0.0, 0.0, ti)
+                fp = FrenetPath()
+                fp.lat_traj = lat_traj
+                fp.t = [t for t in np.arange(0.0, ti, 0.2)]
+                fp.d = [lat_traj.calc_point(t) for t in fp.t]
+                fp.d_d = [lat_traj.calc_first_derivative(t) for t in fp.t]
+                fp.d_dd = [lat_traj.calc_second_derivative(t) for t in fp.t]
+                fp.d_ddd = [lat_traj.calc_third_derivative(t) for t in fp.t]
+
+                for vi in np.arange(self.MIN_V, self.MAX_V + self.DELTA_V, self.DELTA_V):  # 末端速度
+                    lon_traj = QuarticPolynomial(s, s_d, s_dd, vi, 0.0, ti)
+                    # for si in np.arange(self.MIN_S, self.MAX_S + self.DELTA_S, self.DELTA_S):   # 道路长度
+                    #     lon_traj = QuinticPolynomial(s, s_d, s_dd, s + si, vi, 0.0, ti)
 
                     fp_copy = copy.deepcopy(fp)
+                    fp_copy.lon_traj = lon_traj
+                    fp_copy.index = index
                     fp_copy.s = [lon_traj.calc_point(t) for t in fp.t]
                     fp_copy.s_d = [lon_traj.calc_first_derivative(t) for t in fp.t]
                     fp_copy.s_dd = [lon_traj.calc_second_derivative(t) for t in fp.t]
                     fp_copy.s_ddd = [lon_traj.calc_third_derivative(t) for t in fp.t]
                     frenet_paths.append(fp_copy)
+                    index += 1
                     # if check_paths(fp_copy):
                     #     frenet_paths.append(fp_copy)
-    return frenet_paths
+        return frenet_paths
 
+    def calc_cartesian_paths(self, frenet_path, reference_line):
+        # calc global positions
+        for i in range(len(frenet_path.s)):
+            xi, yi = reference_line.calc_position(frenet_path.s[i])
+            if xi is None:
+                break
+            yaw = reference_line.calc_yaw(frenet_path.s[i])
+            di = frenet_path.d[i]
+            # frenet to cartesian
+            fx = xi + di * np.cos(yaw + np.pi / 2.0)
+            fy = yi + di * np.sin(yaw + np.pi / 2.0)
+            frenet_path.x.append(fx)
+            frenet_path.y.append(fy)
 
-def calc_cartesian_paths(frenet_path, reference_line):
-    # calc global positions
-    for i in range(len(frenet_path.s)):
-        xi, yi = reference_line.calc_position(frenet_path.s[i])
-        if xi is None:
-            break
-        yaw = reference_line.calc_yaw(frenet_path.s[i])
-        di = frenet_path.d[i]
-        # frenet to cartesian
-        fx = xi + di * np.cos(yaw + np.pi / 2.0)
-        fy = yi + di * np.sin(yaw + np.pi / 2.0)
-        frenet_path.x.append(fx)
-        frenet_path.y.append(fy)
+        # calc yaw and ds
+        for i in range(len(frenet_path.x) - 1):
+            dx = frenet_path.x[i + 1] - frenet_path.x[i]
+            dy = frenet_path.y[i + 1] - frenet_path.y[i]
+            frenet_path.yaw.append(np.arctan2(dy, dx))
+            frenet_path.ds.append(np.hypot(dx, dy))
 
-    # calc yaw and ds
-    for i in range(len(frenet_path.x) - 1):
-        dx = frenet_path.x[i + 1] - frenet_path.x[i]
-        dy = frenet_path.y[i + 1] - frenet_path.y[i]
-        frenet_path.yaw.append(np.arctan2(dy, dx))
-        frenet_path.ds.append(np.hypot(dx, dy))
+        frenet_path.yaw.append(frenet_path.yaw[-1])
+        frenet_path.ds.append(frenet_path.ds[-1])
 
-    frenet_path.yaw.append(frenet_path.yaw[-1])
-    frenet_path.ds.append(frenet_path.ds[-1])
+        # calc curvature
+        for i in range(len(frenet_path.yaw) - 1):
+            frenet_path.curvature.append((frenet_path.yaw[i + 1] - frenet_path.yaw[i]) / frenet_path.ds[i])
 
-    # calc curvature
-    for i in range(len(frenet_path.yaw) - 1):
-        frenet_path.k.append((frenet_path.yaw[i + 1] - frenet_path.yaw[i]) / frenet_path.ds[i])
+        return frenet_path
 
-    return frenet_path
+    def check_collision(self, fp, ob):
+        for i in range(len(ob[:, 0])):
+            d = [((xi - ob[i, 0]) ** 2 + (yi - ob[i, 1]) ** 2)
+                 for (xi, yi) in zip(fp.x, fp.y)]
 
+            collision = any([di <= self.ROBOT_RADIUS ** 2 for di in d])
+            if collision:
+                return False
 
-def check_collision(fp, ob):
-    for i in range(len(ob[:, 0])):
-        d = [((xi - ob[i, 0]) ** 2 + (yi - ob[i, 1]) ** 2)
-             for (xi, yi) in zip(fp.x, fp.y)]
+        return True
 
-        collision = any([di <= ROBOT_RADIUS ** 2 for di in d])
-        if collision:
+    def check_paths(self, path) -> bool:
+        if any([v > self.MAX_V for v in path.s_d]):  # Max speed check
             return False
+        elif any([abs(a) > self.MAX_A for a in path.s_dd]):  # Max accel check
+            return False
+        elif any([abs(curvature) > self.MAX_K for curvature in path.curvature]):  # Max curvature check
+            return False
+        return True
 
-    return True
+    def frenet_optimal_planning(self, reference_line: CubicSpline2D, s, s_d, s_dd, d, d_d, d_dd, ob):
+        fplist = self.calc_frenet_paths(s, s_d, s_dd, d, d_d, d_dd)
+        path = [self.calc_cartesian_paths(fp, reference_line) for fp in fplist]
+
+        return path
+
+        # find minimum cost path
+        min_cost = float("inf")
+        best_path = None
+        for fp in fplist:
+            if min_cost >= fp.cf:
+                min_cost = fp.cf
+                best_path = fp
+
+        return best_path
+
+    def generate_target_course(self, x: list, y: list) -> (list, list, list, list, CubicSpline2D):
+        reference_line = CubicSpline2D(x, y)
+        s_list = np.arange(0, reference_line.s[-1], 0.1)
+
+        x_list, y_list, yaw_list, curvature_list = [], [], [], []
+        for s in s_list:
+            x, y = reference_line.calc_position(s)
+            x_list.append(x)
+            y_list.append(y)
+            yaw_list.append(reference_line.calc_yaw(s))
+            curvature_list.append(reference_line.calc_curvature(s))
+
+        return x_list, y_list, yaw_list, curvature_list, reference_line
+
+    def cartesian_to_frenet(self, reference_line, x, y, x_d, y_d):
+        # import matplotlib.pyplot as plt
+        # plt.plot(reference_line.x, reference_line.y)
+        # plt.plot(x, y, "x")
+        # plt.show()
+        # for i in range(len(reference_line)):
+        #     xi, yi, yaw, k = reference_line.x[i], reference_line.y[i], reference_line.yaw[i], reference_line.k[i]
+        #     res = (y - yi) / (x - xi) * k
+        #     if (np.abs(y - yi) < 0.1 and np.abs(x - xi) < 0.1) \
+        #             or -1 - 0.1 < (y - yi) / (x - xi) * k < -1 + 0.1:
+        #         s = i * reference_line.ds
+        #         d = np.hypot(y - yi, x - xi)
+        #         s_d = x_d * np.cos(yaw) + y_d * np.sin(yaw)
+        #         d_d = x_d * np.sin(yaw) + y_d * np.cos(yaw)
+        #         return s, d, s_d, d_d
+
+        xi, yi = reference_line.calc_perpendicular_point(x, y)
+        s = reference_line.calc_s(xi)
+        d = np.hypot(y - yi, x - xi)
+        yaw = reference_line.yaw
+        s_d = x_d * np.cos(yaw) + y_d * np.sin(yaw)
+        d_d = x_d * np.sin(yaw) + y_d * np.cos(yaw)
+        return s, d, s_d, d_d
 
 
-def check_paths(path) -> bool:
-    if any([v > MAX_V for v in path.s_d]):  # Max speed check
-        return False
-    elif any([abs(a) > MAX_A for a in path.s_dd]):  # Max accel check
-        return False
-    elif any([abs(k) > MAX_K for k in path.k]):  # Max curvature check
-        return False
-    return True
-
-
-def frenet_optimal_planning(reference_line: CubicSpline2D, s, s_d, s_dd, d, d_d, d_dd, ob):
-    fplist = calc_frenet_paths(s, s_d, s_dd, d, d_d, d_dd)
-    path = [calc_cartesian_paths(fp, reference_line) for fp in fplist]
-
-    return path
-
-    # find minimum cost path
-    min_cost = float("inf")
-    best_path = None
-    for fp in fplist:
-        if min_cost >= fp.cf:
-            min_cost = fp.cf
-            best_path = fp
-
-    return best_path
-
-
-def generate_target_course(x: list, y: list) -> (list, list, list, list, CubicSpline2D):
-    reference_line = CubicSpline2D(x, y)
-    s_list = np.arange(0, reference_line.s[-1], 0.1)
-
-    x_list, y_list, yaw_list, curvature_list = [], [], [], []
-    for s in s_list:
+    def frenet_to_cartesian(self, reference_line: CubicSpline2D, s, d, s_d, d_d):
         x, y = reference_line.calc_position(s)
-        x_list.append(x)
-        y_list.append(y)
-        yaw_list.append(reference_line.calc_yaw(s))
-        curvature_list.append(reference_line.calc_curvature(s))
-
-    return x_list, y_list, yaw_list, curvature_list, reference_line
+        # yaw = reference_line.calc_yaw(s)
+        yaw = reference_line.yaw
+        x += d * np.sin(yaw)
+        y -= d * np.cos(yaw)
+        x_d = s_d * np.cos(yaw) + d_d * np.sin(yaw)
+        y_d = s_d * np.sin(yaw) + d_d * np.cos(yaw)
+        return x, y, x_d, y_d
 
 
 def main():
@@ -191,13 +235,14 @@ def main():
     way_points_y = [0.0, 40.0]
     ob = np.array([[3.0, 3.0], [10.0, 11.0], [23.0, 25.0]])
 
-    tx, ty, tyaw, tc, reference_line = generate_target_course(way_points_x, way_points_y)
+    planner = LatticePlanner()
+    tx, ty, tyaw, tc, reference_line = planner.generate_target_course(way_points_x, way_points_y)
 
     # initial state
-    s = 0.0  # current course position
+    s = 10.0  # current course position
     s_d = 10.0 / 3.6  # current speed [m/s]
     s_dd = 0.0  # current acceleration [m/ss]
-    d = 0.0  # current lateral position [m]
+    d = 2.0  # current lateral position [m]
     d_d = 0.0  # current lateral speed [m/s]
     d_dd = 0.0  # current lateral acceleration [m/s]
 
@@ -217,7 +262,15 @@ def main():
         #     print("Goal")
         #     break
 
-        candidate_trajectories = frenet_optimal_planning(reference_line, s, s_d, s_dd, d, d_d, d_dd, ob)
+        # x, y = 30, 10
+        # x_d, y_d = 1, 0
+        # s, d, s_d, d_d = planner.cartesian_to_frenet(reference_line, x, y, x_d, y_d)
+        # plt.plot(reference_line.x, reference_line.y)
+        # plt.plot(x, y, "x")
+        # plt.grid(True)
+        # plt.show()
+
+        candidate_trajectories = planner.frenet_optimal_planning(reference_line, s, s_d, s_dd, d, d_d, d_dd, ob)
         print(len(candidate_trajectories))
         # if show_animation:  # pragma: no cover
         for path in candidate_trajectories:

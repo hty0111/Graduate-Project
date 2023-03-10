@@ -1,9 +1,10 @@
 """
-Cubic spline planner
-
-Author: Atsushi Sakai(@Atsushi_twi)
-
+Author: HTY
+Email: 1044213317@qq.com
+Date: 2023-03-07 14:46
+Description: Cubic spline planner
 """
+
 import math
 import numpy as np
 import bisect
@@ -16,9 +17,8 @@ class CubicSpline1D:
     Parameters
     ----------
     x : list
-        z coordinates for data points. This z coordinates must be
-        sorted
-        in ascending order.
+        x coordinates for data points. This x coordinates must be
+        sorted in ascending order.
     y : list
         y coordinates for data points
 
@@ -28,12 +28,12 @@ class CubicSpline1D:
 
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
-    >>> z = np.arange(5)
+    >>> x = np.arange(5)
     >>> y = [1.7, -6, 5, 6.5, 0.0]
-    >>> sp = CubicSpline1D(z, y)
+    >>> sp = CubicSpline1D(x, y)
     >>> xi = np.linspace(0.0, 5.0)
-    >>> yi = [sp.calc_position(z) for z in xi]
-    >>> plt.plot(z, y, "xb", label="Data points")
+    >>> yi = [sp.calc_position(x) for x in xi]
+    >>> plt.plot(x, y, "xb", label="Data points")
     >>> plt.plot(xi, yi , "r", label="Cubic spline interpolation")
     >>> plt.grid(True)
     >>> plt.legend()
@@ -47,12 +47,12 @@ class CubicSpline1D:
 
         h = np.diff(x)
         if np.any(h < 0):
-            raise ValueError("z coordinates must be sorted in ascending order")
+            raise ValueError("x coordinates must be sorted in ascending order")
 
         self.a, self.b, self.c, self.d = [], [], [], []
         self.x = x
         self.y = y
-        self.nx = len(x)  # dimension of z
+        self.nx = len(x)  # dimension of x
 
         # calc coefficient a
         self.a = [iy for iy in y]
@@ -72,14 +72,13 @@ class CubicSpline1D:
 
     def calc_position(self, x):
         """
-        Calc `y` position for given `z`.
-
-        if `z` is outside the data point's `z` range, return None.
+        Calc `y` position for given `x`.
+        if `x` is outside the data point's `x` range, return None.
 
         Returns
         -------
         y : float
-            y position for given z.
+            y position for given x.
         """
         if x < self.x[0]:
             return None
@@ -88,21 +87,20 @@ class CubicSpline1D:
 
         i = self.__search_index(x)
         dx = x - self.x[i]
-        position = self.a[i] + self.b[i] * dx + \
-            self.c[i] * dx ** 2.0 + self.d[i] * dx ** 3.0
+        position = self.a[i] + self.b[i] * dx + self.c[i] * dx ** 2.0 + self.d[i] * dx ** 3.0
 
         return position
 
     def calc_first_derivative(self, x):
         """
-        Calc first derivative at given z.
+        Calc first derivative at given x.
 
-        if z is outside the input z, return None
+        if x is outside the input x, return None
 
         Returns
         -------
         dy : float
-            first derivative for given z.
+            first derivative for given x.
         """
 
         if x < self.x[0]:
@@ -117,14 +115,14 @@ class CubicSpline1D:
 
     def calc_second_derivative(self, x):
         """
-        Calc second derivative at given z.
+        Calc second derivative at given x.
 
-        if z is outside the input z, return None
+        if x is outside the input x, return None
 
         Returns
         -------
         ddy : float
-            second derivative for given z.
+            second derivative for given x.
         """
 
         if x < self.x[0]:
@@ -166,8 +164,7 @@ class CubicSpline1D:
         """
         B = np.zeros(self.nx)
         for i in range(self.nx - 2):
-            B[i + 1] = 3.0 * (a[i + 2] - a[i + 1]) / h[i + 1]\
-                - 3.0 * (a[i + 1] - a[i]) / h[i]
+            B[i + 1] = 3.0 * (a[i + 2] - a[i + 1]) / h[i + 1] - 3.0 * (a[i + 1] - a[i]) / h[i]
         return B
 
 
@@ -178,7 +175,7 @@ class CubicSpline2D:
     Parameters
     ----------
     x : list
-        z coordinates for data points.
+        x coordinates for data points.
     y : list
         y coordinates for data points.
 
@@ -187,10 +184,10 @@ class CubicSpline2D:
     You can interpolate a 2D data points.
 
     >>> import matplotlib.pyplot as plt
-    >>> z = [-2.5, 0.0, 2.5, 5.0, 7.5, 3.0, -1.0]
+    >>> x = [-2.5, 0.0, 2.5, 5.0, 7.5, 3.0, -1.0]
     >>> y = [0.7, -6, 5, 6.5, 0.0, 5.0, -2.0]
     >>> ds = 0.1  # [m] distance of each interpolated points
-    >>> sp = CubicSpline2D(z, y)
+    >>> sp = CubicSpline2D(x, y)
     >>> s = np.arange(0, sp.s[-1], ds)
     >>> rx, ry, ryaw, rk = [], [], [], []
     >>> for i_s in s:
@@ -200,11 +197,11 @@ class CubicSpline2D:
     ...     ryaw.append(sp.calc_yaw(i_s))
     ...     rk.append(sp.calc_curvature(i_s))
     >>> plt.subplots(1)
-    >>> plt.plot(z, y, "xb", label="Data points")
+    >>> plt.plot(x, y, "xb", label="Data points")
     >>> plt.plot(rx, ry, "-r", label="Cubic spline path")
     >>> plt.grid(True)
     >>> plt.axis("equal")
-    >>> plt.xlabel("z[m]")
+    >>> plt.xlabel("x[m]")
     >>> plt.ylabel("y[m]")
     >>> plt.legend()
     >>> plt.show()
@@ -235,6 +232,19 @@ class CubicSpline2D:
         self.sx = CubicSpline1D(self.s, x)
         self.sy = CubicSpline1D(self.s, y)
 
+        self.ds = 0.01
+        self.x, self.y, self.k, self.yaw, self.curvature = [], [], [], [], []
+        for si in np.arange(0, self.s[-1], self.ds):
+            xi, yi = self.calc_position(si)
+            self.x.append(xi)
+            self.y.append(yi)
+            self.k.append(self.calc_k(si))
+            self.yaw.append(self.calc_yaw(si))
+            self.curvature.append(self.calc_curvature(si))
+
+    def __len__(self):
+        return len(self.x)
+
     def __calc_s(self, x, y):
         dx = np.diff(x)
         dy = np.diff(y)
@@ -255,8 +265,8 @@ class CubicSpline2D:
 
         Returns
         -------
-        z : float
-            z position for given s.
+        x : float
+            x position for given s.
         y : float
             y position for given s.
         """
@@ -284,8 +294,13 @@ class CubicSpline2D:
         ddx = self.sx.calc_second_derivative(s)
         dy = self.sy.calc_first_derivative(s)
         ddy = self.sy.calc_second_derivative(s)
-        k = (ddy * dx - ddx * dy) / ((dx ** 2 + dy ** 2)**(3 / 2))
-        return k
+        curvature = (ddy * dx - ddx * dy) / ((dx ** 2 + dy ** 2)**(3 / 2))
+        return curvature
+
+    def calc_k(self, s):
+        dx = self.sx.calc_first_derivative(s)
+        dy = self.sy.calc_first_derivative(s)
+        return dy / dx
 
     def calc_yaw(self, s):
         """
@@ -308,73 +323,69 @@ class CubicSpline2D:
         return yaw
 
 
-def calc_spline_course(x, y, ds=0.1):
-    sp = CubicSpline2D(x, y)
-    s = list(np.arange(0, sp.s[-1], ds))
-
-    rx, ry, ryaw, rk = [], [], [], []
-    for i_s in s:
-        ix, iy = sp.calc_position(i_s)
-        rx.append(ix)
-        ry.append(iy)
-        ryaw.append(sp.calc_yaw(i_s))
-        rk.append(sp.calc_curvature(i_s))
-
-    return rx, ry, ryaw, rk, s
-
-
 def main_1d():
     print("CubicSpline1D testtt")
     import matplotlib.pyplot as plt
-    x = np.arange(5)
-    y = [1.7, -6, 5, 6.5, 0.0]
+    # x = np.arange(5)
+    # y = [1.7, -6, 5, 6.5, 0.0]
+    x = [0, 1, 2, 4, 5]
+    y = [0, 1, 2, 4, 5]
     sp = CubicSpline1D(x, y)
-    xi = np.linspace(0.0, 5.0)
+    xi = np.linspace(0.0, 6.0)
 
+    plt.subplots(1)
     plt.plot(x, y, "xb", label="Data points")
     plt.plot(xi, [sp.calc_position(x) for x in xi], "r",
              label="Cubic spline interpolation")
     plt.grid(True)
     plt.legend()
+
+    plt.subplots(1)
+    plt.plot(x, y, "xb", label="Data points")
+    plt.plot(xi, [sp.calc_first_derivative(x) for x in xi], "r",
+             label="Cubic spline interpolation first derivative")
+    plt.grid(True)
+    plt.legend()
+
+    # plt.subplots(1)
+    # plt.plot(x, y, "xb", label="Data points")
+    # plt.plot(xi, [sp.calc_second_derivative(x) for x in xi], "r",
+    #          label="Cubic spline interpolation second derivative")
+    # plt.grid(True)
+    # plt.legend()
+
     plt.show()
 
 
 def main_2d():  # pragma: no cover
-    print("CubicSpline2D testtt")
     import matplotlib.pyplot as plt
-    x = [-2.5, 0.0, 2.5, 5.0, 7.5, 3.0, -1.0]
-    y = [0.7, -6, 5, 6.5, 0.0, 5.0, -2.0]
+    # x = [-2.5, 0.0, 2.5, 5.0, 7.5, 3.0, -1.0]
+    # y = [0.7, -6, 5, 6.5, 0.0, 5.0, -2.0]
+    x = [0, 1, 2, 4, 5]
+    y = [0, 1, 2, 4, 5]
     ds = 0.1  # [m] distance of each interpolated points
 
     sp = CubicSpline2D(x, y)
     s = np.arange(0, sp.s[-1], ds)
 
-    rx, ry, ryaw, rk = [], [], [], []
-    for i_s in s:
-        ix, iy = sp.calc_position(i_s)
-        rx.append(ix)
-        ry.append(iy)
-        ryaw.append(sp.calc_yaw(i_s))
-        rk.append(sp.calc_curvature(i_s))
-
     plt.subplots(1)
     plt.plot(x, y, "xb", label="Data points")
-    plt.plot(rx, ry, "-r", label="Cubic spline path")
+    plt.plot(sp.x, sp.y, "-r", label="Cubic spline path")
     plt.grid(True)
     plt.axis("equal")
-    plt.xlabel("z[m]")
+    plt.xlabel("x[m]")
     plt.ylabel("y[m]")
     plt.legend()
 
     plt.subplots(1)
-    plt.plot(s, [np.rad2deg(iyaw) for iyaw in ryaw], "-r", label="yaw")
+    plt.plot(s, [np.rad2deg(iyaw) for iyaw in sp.yaw], "-r", label="yaw")
     plt.grid(True)
     plt.legend()
     plt.xlabel("line length[m]")
     plt.ylabel("yaw angle[deg]")
 
     plt.subplots(1)
-    plt.plot(s, rk, "-r", label="curvature")
+    plt.plot(s, sp.k, "-r", label="curvature")
     plt.grid(True)
     plt.legend()
     plt.xlabel("line length[m]")

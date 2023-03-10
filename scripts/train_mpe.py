@@ -15,7 +15,7 @@ from pathlib import Path
 import torch
 from config import get_config
 from envs.env_wrappers import SubprocShareVecEnv, DummyShareVecEnv
-from envs.mpe import mapf_v1
+from envs.mpe import mapf
 
 """Train script for MPEs."""
 
@@ -23,7 +23,8 @@ from envs.mpe import mapf_v1
 def make_train_env(args):
     def get_env_fn(rank):
         def init_env():
-            env = mapf_v1.parallel_env(num_agents=args.num_agents)
+            # env = mapf.env(num_agents=args.num_agents)
+            env = mapf.parallel_env(num_agents=args.num_agents)
             env.reset(seed=args.seed + rank * 1000)
             return env
         return init_env
@@ -37,7 +38,8 @@ def make_train_env(args):
 def make_eval_env(args):
     def get_env_fn(rank):
         def init_env():
-            env = mapf_v1.parallel_env(num_agents=args.num_agents)
+            # env = mapf.env(num_agents=args.num_agents)
+            env = mapf.parallel_env(num_agents=args.num_agents)
             env.reset(seed=args.seed * 50000 + rank * 10000)
             return env
         return init_env

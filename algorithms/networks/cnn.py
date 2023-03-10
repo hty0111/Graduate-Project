@@ -1,7 +1,7 @@
 import torch.nn as nn
 from utils.util import init
 
-"""CNN Modules and utils."""
+"""CNN Modules and networks."""
 
 class Flatten(nn.Module):
     def forward(self, x):

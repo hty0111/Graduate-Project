@@ -34,13 +34,22 @@ class MPERunner(Runner):
                 # take actions by policy
                 values, actions, action_log_probs, rnn_states, rnn_states_critic = self.collect(step)
 
-                # step, shape: (num_envs * num_agents * dim)
-                observations, rewards, terminations, truncations, infos = self.envs.step(
-                    actions)  # mapf.py/observation()
+                # step: mapf.py/observation() & base_env.step(), shape: (num_envs * num_agents * dim)
+                observations, rewards, terminations, truncations, infos = self.envs.step(actions)
+
+                # # dones if terminations or truncations
+                # dones = np.array(
+                #     [b1 or b2 for t1, t2 in zip(terminations, truncations) for b1, b2 in zip(t1, t2)]).reshape(
+                #     terminations.shape
+                # )
+                dones = infos
 
                 # insert data into buffer
-                data = observations, rewards, terminations, truncations, infos, values, actions, action_log_probs, rnn_states, rnn_states_critic
+                data = observations, rewards, dones, infos, values, actions, action_log_probs, rnn_states, rnn_states_critic
                 self.insert(data)
+
+                if np.all(dones):
+                    break
 
             # compute return and update network
             self.compute()
@@ -66,20 +75,20 @@ class MPERunner(Runner):
                               self.num_env_steps,
                               int(total_num_steps / (end - start))))
 
-                if self.env_name == "MPE":
-                    env_infos = {}
-                    for agent_id in range(self.num_agents):
-                        idv_rews = []
-                        for info in infos:
-                            if 'individual_reward' in info[agent_id].keys():
-                                idv_rews.append(info[agent_id]['individual_reward'])
-                        agent_k = 'agent%i/individual_rewards' % agent_id
-                        env_infos[agent_k] = idv_rews
+                # if self.env_name == "MPE":
+                #     env_infos = {}
+                #     for agent_id in range(self.num_agents):
+                #         idv_rews = []
+                #         for info in infos:
+                #             if 'individual_reward' in info[agent_id].keys():
+                #                 idv_rews.append(info[agent_id]['individual_reward'])
+                #         agent_k = 'agent%i/individual_rewards' % agent_id
+                #         env_infos[agent_k] = idv_rews
 
                 train_infos["average_episode_rewards"] = np.mean(self.buffer.rewards) * self.episode_length
                 print("average episode rewards is {}".format(train_infos["average_episode_rewards"]))
                 self.log_train(train_infos, total_num_steps)
-                self.log_env(env_infos, total_num_steps)
+                # self.log_env(env_infos, total_num_steps)
 
             # eval
             if episode % self.eval_interval == 0 and self.use_eval:
@@ -94,7 +103,6 @@ class MPERunner(Runner):
             # (num_envs, num_agents, state_dim)
             state = observations.reshape(self.n_rollout_threads, -1)
             state = np.expand_dims(state, 1).repeat(self.num_agents, axis=1)
-            # state = np.expand_dims(observations.reshape(-1), 1).repeat(self.num_agents, 1)  # (num_agents, state_dim)
         else:
             state = observations
 
@@ -122,15 +130,10 @@ class MPERunner(Runner):
         return values, actions, action_log_probs, rnn_states, rnn_states_critic
 
     def insert(self, data):
-        observations, rewards, terminations, truncations, infos, values, actions, action_log_probs, rnn_states, rnn_states_critic = data
+        observations, rewards, dones, infos, values, actions, action_log_probs, rnn_states, rnn_states_critic = data
 
-        # dones if terminations or truncations
-        dones = np.array([b1 or b2 for t1, t2 in zip(terminations, truncations) for b1, b2 in zip(t1, t2)]).reshape(
-            terminations.shape)
-        rnn_states[dones == True] = np.zeros(((dones == True).sum(), self.recurrent_N, self.hidden_size),
-                                             dtype=np.float32)
-        rnn_states_critic[dones == True] = np.zeros(((dones == True).sum(), *self.buffer.rnn_states_critic.shape[3:]),
-                                                    dtype=np.float32)
+        rnn_states[dones == True] = np.zeros(((dones == True).sum(), self.recurrent_N, self.hidden_size), dtype=np.float32)
+        rnn_states_critic[dones == True] = np.zeros(((dones == True).sum(), *self.buffer.rnn_states_critic.shape[3:]), dtype=np.float32)
         masks = np.ones((self.n_rollout_threads, self.num_agents, 1), dtype=np.float32)
         masks[dones == True] = np.zeros(((dones == True).sum(), 1), dtype=np.float32)
 
