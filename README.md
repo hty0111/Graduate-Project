@@ -14,10 +14,10 @@
 
 ### TODO
 
-- 可视化step的连续过程
-- 起点均匀按序分布
-- 终点不重合
-- 添加障碍物
-- agent结束时reward取消计算
-- 将base_env中的lattice部分移植到entity中
-- 整理utils
+- [ ] 可视化step的连续过程
+- [x] 起点均匀按序分布
+- [x] 终点不重合
+- [ ] 修改lattice采样模式
+- [x] 添加障碍物
+- [x] agent结束时reward取消计算
+- [ ] 将base_env中的lattice部分移植到entity中

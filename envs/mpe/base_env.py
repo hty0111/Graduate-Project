@@ -155,14 +155,15 @@ class BaseEnv(AECEnv):
             plt.ylim(0, self.height)
             if agent.movable is True and action is not None:
                 agent.pos, agent.vel = self._set_action(agent.pos, agent.vel, action, reference_line, self.step_dt)
+            reward = float(self.scenario.reward(agent, self.world.landmarks[self._index_map[agent.name]], self.world))
+            self.rewards[agent.name] = reward if action is not None else 0  # 如果done就把reward设为0
+            self.infos[agent.name] = self.done(agent)
+
             plt.plot(agent.pos[0], agent.pos[1], "rx")
+
+
         # plt.show()
         # self.world.step()
-
-        for agent in self.world.agents:
-            reward = float(self.scenario.reward(agent, self.world.landmarks[self._index_map[agent.name]], self.world))
-            self.rewards[agent.name] = reward
-            self.infos[agent.name] = self.done(agent)
 
     def done(self, agent) -> bool:
         landmark = self.world.landmarks[self._index_map[agent.name]]
