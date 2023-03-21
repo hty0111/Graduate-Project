@@ -86,13 +86,14 @@ class Scenario:
         for i, landmark in enumerate(world.landmarks):
             landmark.color = np.array([135, 206, 250])
         # set random initial states
-        for agent in world.agents:
+        for agent, landmark, reference_line in zip(world.agents, world.landmarks, world.reference_lines):
             agent.pos = np.array([np_random.uniform(agent.size, width - agent.size), agent.size])  # bottom
             agent.vel = np.zeros(world.dim_p)
             agent.c = np.zeros(world.dim_c)
-        for landmark in world.landmarks:
+            agent.color = np_random.uniform(0, 255, size=3)
             landmark.pos = np.array([np_random.uniform(landmark.size, width - landmark.size), height - landmark.size])  # top
             landmark.vel = np.zeros(world.dim_p)
+            landmark.color = agent.color
         # add reference lines
         for i in range(len(world.agents)):
             # x_list = [world.agents[i].pos[0], world.landmarks[i].pos[0]]
