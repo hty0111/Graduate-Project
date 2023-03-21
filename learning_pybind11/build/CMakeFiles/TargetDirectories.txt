@@ -1,5 +1,0 @@
-/home/hty/Desktop/graduation_project/learning_pybind11/build/CMakeFiles/functions.dir
-/home/hty/Desktop/graduation_project/learning_pybind11/build/CMakeFiles/structs.dir
-/home/hty/Desktop/graduation_project/learning_pybind11/build/CMakeFiles/classes.dir
-/home/hty/Desktop/graduation_project/learning_pybind11/build/CMakeFiles/edit_cache.dir
-/home/hty/Desktop/graduation_project/learning_pybind11/build/CMakeFiles/rebuild_cache.dir

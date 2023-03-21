@@ -1,0 +1,11 @@
+.*
+!.git
+!.gitignore
+__pycache__
+build
+devel
+bin
+cmake-build-debug
+test*
+results
+*.so
