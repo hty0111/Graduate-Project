@@ -252,6 +252,11 @@ class BaseEnv(AECEnv):
             points = [self.world2map(x, y) for x, y in zip(reference_line.x, reference_line.y)]
             pygame.draw.lines(self.screen, agent.color, False, points)
 
+        for obstacle in self.world.obstacles:
+            x, y = self.world2map(*obstacle.pos)
+            pygame.draw.circle(self.screen, obstacle.color, (x, y), obstacle.size * self.canvas_scale)
+            pygame.draw.circle(self.screen, (0, 0, 0), (x, y), obstacle.size * self.canvas_scale, 1)
+
             # text
             # self.game_font.render_to(
             #     surf=self.screen, dest=(x, y), text=entity.name, fgcolor=(0, 0, 0)

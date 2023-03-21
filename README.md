@@ -20,3 +20,4 @@
 - 添加障碍物
 - agent结束时reward取消计算
 - 将base_env中的lattice部分移植到entity中
+- 整理utils

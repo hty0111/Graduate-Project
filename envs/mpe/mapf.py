@@ -33,15 +33,15 @@ mapf_v1.env(max_cycles=25, continuous_actions=False)
 import numpy as np
 from pettingzoo.utils.conversions import parallel_wrapper_fn
 
-from .entities import Agent, Landmark, ReferenceLine, World
+from .entities import Agent, Landmark, Obstacle, ReferenceLine, World
 from .base_env import BaseEnv, make_env
 from algorithms.lattice.cubic_spline import CubicSpline2D
 
 
 class raw_env(BaseEnv):
-    def __init__(self, max_cycles=25, num_agents=3, render_mode='human'):
+    def __init__(self, max_cycles=25, num_agents=3, num_obstacles=10, render_mode='human'):
         scenario = Scenario()
-        world = scenario.make_world(num_agents)
+        world = scenario.make_world(num_agents, num_obstacles)
         super().__init__(
             scenario=scenario,
             world=world,
@@ -56,13 +56,13 @@ parallel_env = parallel_wrapper_fn(env)
 
 
 class Scenario:
-    def make_world(self, num=2):
+    def make_world(self, num_agents, num_obs):
         world = World()
         # set any world properties first
         world.dim_c = 2
-        num_agents = num
-        num_landmarks = num
-        num_reference_line = num
+        num_agents = num_agents
+        num_landmarks = num_agents
+        num_reference_line = num_agents
         # add agents
         world.agents = [Agent() for i in range(num_agents)]
         for i, agent in enumerate(world.agents):
@@ -76,30 +76,30 @@ class Scenario:
             landmark.collide = False
             landmark.movable = False
         world.reference_lines = [ReferenceLine for i in range(num_reference_line)]
+        world.obstacles = [Obstacle() for i in range(num_obs)]
         return world
 
     def reset_world(self, world, np_random, width, height):
-        # random properties for agents
-        for i, agent in enumerate(world.agents):
-            agent.color = np.array([255, 182, 193])
-        # random properties for landmarks
-        for i, landmark in enumerate(world.landmarks):
-            landmark.color = np.array([135, 206, 250])
-        # set random initial states
-        for agent, landmark, reference_line in zip(world.agents, world.landmarks, world.reference_lines):
+        # set properties & states for agents & landmarks
+        for i, (agent, landmark, reference_line) in enumerate(zip(world.agents, world.landmarks, world.reference_lines)):
             agent.pos = np.array([np_random.uniform(agent.size, width - agent.size), agent.size])  # bottom
             agent.vel = np.zeros(world.dim_p)
             agent.c = np.zeros(world.dim_c)
             agent.color = np_random.uniform(0, 255, size=3)
+
             landmark.pos = np.array([np_random.uniform(landmark.size, width - landmark.size), height - landmark.size])  # top
             landmark.vel = np.zeros(world.dim_p)
             landmark.color = agent.color
-        # add reference lines
+
+        # calculate reference lines
         for i in range(len(world.agents)):
-            # x_list = [world.agents[i].pos[0], world.landmarks[i].pos[0]]
-            # y_list = [world.agents[i].pos[1], world.landmarks[i].pos[1]]
             world.reference_lines[i] = ReferenceLine(world.agents[i].pos, world.landmarks[i].pos)
 
+        # set properties for obstacles
+        for obstacle in world.obstacles:
+            obstacle.pos = np.array([np_random.uniform(obstacle.size, width - obstacle.size), np_random.uniform(obstacle.size, height - obstacle.size)])
+            obstacle.color = (0, 0, 0)
+            obstacle.size = 0.5
 
     def benchmark_data(self, agent, world):
         reward = 0
@@ -122,10 +122,10 @@ class Scenario:
                     collisions += 1
         return reward, collisions, min_dists, occupied_landmarks
 
-    def is_collision(self, agent1, agent2):
-        delta_pos = agent1.pos - agent2.pos
+    def is_collision(self, entity1, entity2):
+        delta_pos = entity1.pos - entity2.pos
         dist = np.sqrt(np.sum(np.square(delta_pos)))
-        dist_min = agent1.size + agent2.size
+        dist_min = entity1.size + entity2.size
         return True if dist < dist_min else False
 
     def reward(self, agent: Agent, landmark: Landmark, world: World):
@@ -135,7 +135,11 @@ class Scenario:
         # collision
         if agent.collide:
             for a in world.agents:
-                if a is not agent and self.is_collision(a, agent):
+                if a is not agent and self.is_collision(agent, a):
+                    rew -= 1
+
+            for obs in world.obstacles:
+                if self.is_collision(agent, obs):
                     rew -= 1
 
         # distance to goal
@@ -143,7 +147,6 @@ class Scenario:
         #     rew += 10
 
         # velocity
-
 
         return rew
 

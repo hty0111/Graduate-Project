@@ -24,7 +24,7 @@ def make_train_env(args):
     def get_env_fn(rank):
         def init_env():
             # env = mapf.env(num_agents=args.num_agents)
-            env = mapf.parallel_env(num_agents=args.num_agents)
+            env = mapf.parallel_env(num_agents=args.num_agents, num_obstacles=args.num_obstacles)
             env.reset(seed=args.seed + rank * 1000)
             return env
         return init_env
@@ -39,7 +39,7 @@ def make_eval_env(args):
     def get_env_fn(rank):
         def init_env():
             # env = mapf.env(num_agents=args.num_agents)
-            env = mapf.parallel_env(num_agents=args.num_agents)
+            env = mapf.parallel_env(num_agents=args.num_agents, num_obstacles=args.num_obstacles)
             env.reset(seed=args.seed * 50000 + rank * 10000)
             return env
         return init_env
