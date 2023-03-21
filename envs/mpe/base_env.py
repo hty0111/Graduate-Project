@@ -50,7 +50,7 @@ class BaseEnv(AECEnv):
         pygame.init()
         self.viewer = None
         self.width = 70
-        self.height = 100
+        self.height = 150
         self.canvas_scale = 10
         self.screen = pygame.Surface([self.width * self.canvas_scale, self.height * self.canvas_scale])
         self.game_font = pygame.freetype.Font(os.path.join(os.path.dirname(__file__), "secrcode.ttf"), 15)
@@ -63,6 +63,7 @@ class BaseEnv(AECEnv):
         self.scenario = scenario
         self.world = world
         self.scenario.reset_world(self.world, self.np_random, self.width, self.height)
+        # self.agent_landmark = {agent: landmark for agent, landmark in zip(self.world.agents, self.world.landmarks)}
 
         self.agents = [agent.name for agent in self.world.agents]
         self.possible_agents = self.agents[:]
@@ -155,11 +156,11 @@ class BaseEnv(AECEnv):
             if agent.movable is True and action is not None:
                 agent.pos, agent.vel = self._set_action(agent.pos, agent.vel, action, reference_line, self.step_dt)
             plt.plot(agent.pos[0], agent.pos[1], "rx")
-        plt.show()
+        # plt.show()
         # self.world.step()
 
         for agent in self.world.agents:
-            reward = float(self.scenario.reward(agent, self.world))
+            reward = float(self.scenario.reward(agent, self.world.landmarks[self._index_map[agent.name]], self.world))
             self.rewards[agent.name] = reward
             self.infos[agent.name] = self.done(agent)
 
@@ -194,7 +195,6 @@ class BaseEnv(AECEnv):
         current_idx = self._index_map[self.agent_selection]
         self.current_actions[current_idx] = action
 
-        # if next_idx == 0:   # 更新整个地图
         if self._agent_selector.is_last():  # update the whole world
             self._execute_world_step()
             self.steps += 1
@@ -203,10 +203,6 @@ class BaseEnv(AECEnv):
                     self.infos[a] = True
         else:
             self._clear_rewards()
-
-        # TODO reward为啥要清零
-        self._cumulative_rewards[cur_agent] = 0
-        self._accumulate_rewards()
 
         if self.render_mode == "human":
             self.render()

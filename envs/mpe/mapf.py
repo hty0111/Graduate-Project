@@ -127,20 +127,25 @@ class Scenario:
         dist_min = agent1.size + agent2.size
         return True if dist < dist_min else False
 
-    def reward(self, agent, world):
-        """distance to goal; collision; velocity; lateral offset; """
+    def reward(self, agent: Agent, landmark: Landmark, world: World):
+        """ collision; distance to goal; velocity; lateral offset; """
         rew = 0
+
+        # collision
         if agent.collide:
             for a in world.agents:
-                if self.is_collision(a, agent):
+                if a is not agent and self.is_collision(a, agent):
                     rew -= 1
+
+        # distance to goal
+        # if np.hypot(agent.pos[0] - landmark.pos[0], agent.pos[1] - landmark.pos[1]) < 5:
+        #     rew += 10
+
+        # velocity
+
+
         return rew
 
-    def termination(self, agent, landmark):
-        if np.hypot(agent.pos[0] - landmark.pos[0], agent.pos[1] - landmark.pos[1]) < 5:
-            return True
-        else:
-            return False
 
     def observation(self, agent: Agent, landmark: Landmark, world: World):
         # get positions of all entities in this agent's reference frame
