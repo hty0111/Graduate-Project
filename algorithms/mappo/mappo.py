@@ -15,25 +15,25 @@ class MAPPO:
     MAPPO Policy  class. Wraps actor and critic networks to compute actions and value function predictions.
 
     :param args: (argparse.Namespace) arguments containing relevant model and policy information.
-    :param obs_space: (gym.Space) observation space.
+    :param observation_space: (gym.Space) observation space.
     :param state_space: (gym.Space) value function input space (centralized input for MAPPO, decentralized for IPPO).
     :param action_space: (gym.Space) action space.
     :param device: (torch.device) specifies the device to run on (cpu/gpu).
     """
 
-    def __init__(self, args, obs_space, state_space, act_space, device=torch.device("cpu")):
+    def __init__(self, args, observation_space, state_space, action_space, device=torch.device("cpu")):
         self.device = device
         self.lr = args.lr
         self.critic_lr = args.critic_lr
         self.opti_eps = args.opti_eps
         self.weight_decay = args.weight_decay
 
-        self.obs_space = obs_space
-        self.share_obs_space = state_space
-        self.act_space = act_space
+        self.observation_space = observation_space
+        self.state_space = state_space
+        self.action_space = action_space
 
-        self.actor = Actor(args, self.obs_space, self.act_space, self.device)
-        self.critic = Critic(args, self.share_obs_space, self.device)
+        self.actor = Actor(args, self.observation_space, self.action_space, self.device)
+        self.critic = Critic(args, self.state_space, self.device)
 
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(),
                                                 lr=self.lr, eps=self.opti_eps,
@@ -52,12 +52,12 @@ class MAPPO:
         update_linear_schedule(self.actor_optimizer, episode, episodes, self.lr)
         update_linear_schedule(self.critic_optimizer, episode, episodes, self.critic_lr)
 
-    def get_actions(self, state, observations, rnn_states_actor, rnn_states_critic, masks, available_actions=None,
-                    deterministic=False):
+    def get_actions(self, state, observations, rnn_states_actor, rnn_states_critic, masks, 
+                    available_actions=None, deterministic=False):
         """
         Compute actions and value function predictions for the given inputs.
-        :param state (np.ndarray): centralized input to the critic.
-        :param observations (np.ndarray): local agent inputs to the actor.
+        :param state: (np.ndarray) centralized input to the critic.
+        :param observations: (np.ndarray)local agent inputs to the actor.
         :param rnn_states_actor: (np.ndarray) if actor is RNN, RNN states for actor.
         :param rnn_states_critic: (np.ndarray) if critic is RNN, RNN states for critic.
         :param masks: (np.ndarray) denotes points at which RNN states should be reset.

@@ -2,7 +2,7 @@
 Author: HTY
 Email: 1044213317@qq.com
 Date: 2023-02-17 14-10
-Description: Multi-Agent Path Finding
+Description: Scenario for Multi-Agent Path Finding
 
 |--------------------|----------------------------------------|
 | Actions            | Discrete                    |
@@ -161,23 +161,15 @@ class Scenario:
 
         return rew
 
-
     def observation(self, agent: Agent, landmark: Landmark, world: World):
-        # get positions of all entities in this agent's reference frame
-        landmark_pos = landmark.pos - agent.pos
-        # entity colors
-        entity_color = []
-        for entity in world.landmarks:  # world.entities:
-            entity_color.append(entity.color)
-        # communication of all other agents
-        # TODO use_communication & add_obstacles
-        comm = []
         other_pos = []
         for other in world.agents:
             if other is agent:
                 continue
-            comm.append(other.c)
             other_pos.append(other.pos - agent.pos)
+
+        obstacles_pos = [obstacle.pos for obstacle in world.obstacles]
+
         return np.concatenate(
-            [agent.vel] + [agent.pos] + [landmark_pos]
+            [agent.vel] + [agent.pos] + [landmark.pos] + obstacles_pos
         )
