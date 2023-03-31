@@ -11,7 +11,7 @@ def _cast(x):
     return x.transpose(1,0,2).reshape(-1, *x.shape[2:])
 
 class SeparatedReplayBuffer(object):
-    def __init__(self, args, obs_space, share_obs_space, act_space):
+    def __init__(self, args, obs_space, state_space, act_space):
         self.episode_length = args.episode_length
         self.n_rollout_threads = args.n_rollout_threads
         self.rnn_hidden_size = args.hidden_size
@@ -24,7 +24,7 @@ class SeparatedReplayBuffer(object):
         self._use_proper_time_limits = args.use_proper_time_limits
 
         obs_shape = get_shape_from_obs_space(obs_space)
-        share_obs_shape = get_shape_from_obs_space(share_obs_space)
+        share_obs_shape = get_shape_from_obs_space(state_space)
 
         if type(obs_shape[-1]) == list:
             obs_shape = obs_shape[:1]

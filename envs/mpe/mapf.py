@@ -2,7 +2,7 @@
 Author: HTY
 Email: 1044213317@qq.com
 Date: 2023-02-17 14-10
-Description: Multi-Agent Path Finding
+Description: Scenario for Multi-Agent Path Finding
 
 |--------------------|----------------------------------------|
 | Actions            | Discrete                    |
@@ -82,17 +82,28 @@ class Scenario:
     def reset_world(self, world, np_random, width, height):
         # set properties & states for agents & landmarks
         for i, (agent, landmark, reference_line) in enumerate(zip(world.agents, world.landmarks, world.reference_lines)):
-            agent.pos = np.array([np_random.uniform(agent.size, width - agent.size), agent.size])  # bottom
+            # 智能体起点按序均匀分布
+            delta_x = width / (len(world.agents) + 1)
+            agent.pos = np.array([delta_x * (i + 1), agent.size])  # bottom
             agent.vel = np.zeros(world.dim_p)
             agent.c = np.zeros(world.dim_c)
             agent.color = np_random.uniform(0, 255, size=3)
 
-            landmark.pos = np.array([np_random.uniform(landmark.size, width - landmark.size), height - landmark.size])  # top
+            # 避免重点重合
+            while True:
+                x = np_random.uniform(landmark.size, width - landmark.size)
+                success = True
+                for l in world.landmarks:
+                    if l.pos is not None and np.abs(x - l.pos[0]) < landmark.size + l.size:
+                        success = False
+                        break
+                if success is True:
+                    break
+            landmark.pos = np.array([x, height - landmark.size])  # top
             landmark.vel = np.zeros(world.dim_p)
             landmark.color = agent.color
 
-        # calculate reference lines
-        for i in range(len(world.agents)):
+            # calculate reference lines
             world.reference_lines[i] = ReferenceLine(world.agents[i].pos, world.landmarks[i].pos)
 
         # set properties for obstacles
@@ -150,23 +161,15 @@ class Scenario:
 
         return rew
 
-
     def observation(self, agent: Agent, landmark: Landmark, world: World):
-        # get positions of all entities in this agent's reference frame
-        landmark_pos = landmark.pos - agent.pos
-        # entity colors
-        entity_color = []
-        for entity in world.landmarks:  # world.entities:
-            entity_color.append(entity.color)
-        # communication of all other agents
-        # TODO use_communication & add_obstacles
-        comm = []
         other_pos = []
         for other in world.agents:
             if other is agent:
                 continue
-            comm.append(other.c)
             other_pos.append(other.pos - agent.pos)
+
+        obstacles_pos = [obstacle.pos for obstacle in world.obstacles]
+
         return np.concatenate(
-            [agent.vel] + [agent.pos] + [landmark_pos]
+            [agent.vel] + [agent.pos] + [landmark.pos] + obstacles_pos
         )

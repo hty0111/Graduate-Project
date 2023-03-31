@@ -74,6 +74,7 @@ class LatticePlanner:
         self.s_dim = int((self.MAX_S - self.MIN_S) / self.DELTA_S + 1)  # 5
         self.d_dim = int((self.MAX_D + self.MAX_D) / self.DELTA_D + 1)  # 7
         self.sample_dim = int(self.t_dim * self.v_dim * self.d_dim)
+        self.dt = 0.2
 
     def calc_frenet_paths(self, s, s_d, s_dd, d, d_d, d_dd):
         frenet_paths = []
@@ -84,7 +85,7 @@ class LatticePlanner:
                 lat_traj = QuinticPolynomial(d, d_d, d_dd, di, 0.0, 0.0, ti)
                 fp = FrenetPath()
                 fp.lat_traj = lat_traj
-                fp.t = [t for t in np.arange(0.0, ti, 0.2)]
+                fp.t = [t for t in np.arange(0.0, ti, self.dt)]
                 fp.d = [lat_traj.calc_point(t) for t in fp.t]
                 fp.d_d = [lat_traj.calc_first_derivative(t) for t in fp.t]
                 fp.d_dd = [lat_traj.calc_second_derivative(t) for t in fp.t]
@@ -188,40 +189,19 @@ class LatticePlanner:
 
         return x_list, y_list, yaw_list, curvature_list, reference_line
 
-    def cartesian_to_frenet(self, reference_line, x, y, x_d, y_d):
-        # import matplotlib.pyplot as plt
-        # plt.plot(reference_line.x, reference_line.y)
-        # plt.plot(x, y, "x")
-        # plt.show()
-        # for i in range(len(reference_line)):
-        #     xi, yi, yaw, k = reference_line.x[i], reference_line.y[i], reference_line.yaw[i], reference_line.k[i]
-        #     res = (y - yi) / (x - xi) * k
-        #     if (np.abs(y - yi) < 0.1 and np.abs(x - xi) < 0.1) \
-        #             or -1 - 0.1 < (y - yi) / (x - xi) * k < -1 + 0.1:
-        #         s = i * reference_line.ds
-        #         d = np.hypot(y - yi, x - xi)
-        #         s_d = x_d * np.cos(yaw) + y_d * np.sin(yaw)
-        #         d_d = x_d * np.sin(yaw) + y_d * np.cos(yaw)
-        #         return s, d, s_d, d_d
-
+    def cartesian_to_frenet(self, reference_line, x, y):
         xi, yi = reference_line.calc_perpendicular_point(x, y)
         s = reference_line.calc_s(xi)
         d = np.hypot(y - yi, x - xi)
-        yaw = reference_line.yaw
-        s_d = x_d * np.cos(yaw) + y_d * np.sin(yaw)
-        d_d = x_d * np.sin(yaw) + y_d * np.cos(yaw)
-        return s, d, s_d, d_d
+        return s, d
 
-
-    def frenet_to_cartesian(self, reference_line: CubicSpline2D, s, d, s_d, d_d):
+    def frenet_to_cartesian(self, reference_line, s, d):
         x, y = reference_line.calc_position(s)
         # yaw = reference_line.calc_yaw(s)
         yaw = reference_line.yaw
         x += d * np.sin(yaw)
         y -= d * np.cos(yaw)
-        x_d = s_d * np.cos(yaw) + d_d * np.sin(yaw)
-        y_d = s_d * np.sin(yaw) + d_d * np.cos(yaw)
-        return x, y, x_d, y_d
+        return x, y
 
 
 def main():

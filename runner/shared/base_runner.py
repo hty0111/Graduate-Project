@@ -27,6 +27,7 @@ class Runner(object):
         self.eval_envs = config['eval_envs']
         self.device = config['device']
         self.num_agents = config['num_agents']
+        self.num_obstacles = config['num_obstacles']
         if config.__contains__("render_envs"):
             self.render_envs = config['render_envs']       
 
@@ -70,10 +71,10 @@ class Runner(object):
                 os.makedirs(self.save_dir)
 
         # 将env_wrapper中的spaces转换成网络输入
-
         observation_space = self.envs.observation_spaces[0] # Box(-inf, inf, (dim, ), float32)
         state_space = self.envs.state_space                 # Box(-inf, inf, (dim, ), float32)
         action_space = self.envs.action_spaces[0]           # Discrete(dim)
+
         # policy network
         self.policy = Policy(self.args,
                              observation_space,
