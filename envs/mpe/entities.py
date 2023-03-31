@@ -62,6 +62,11 @@ class Agent(Entity):  # properties of agent entities
         self.c = None
 
 
+class Obstacle(Entity):
+    def __init__(self):
+        super().__init__()
+
+
 class ReferenceLine:
     def __init__(self, start_pos, end_pos):
         self.k = (end_pos[1] - start_pos[1]) / (end_pos[0] - start_pos[0])
@@ -96,6 +101,7 @@ class World:  # multi-agent world
         self.agents = []
         self.landmarks = []
         self.reference_lines = []
+        self.obstacles = []
         # communication channel dimensionality
         self.dim_c = 0
         # position dimensionality

@@ -49,8 +49,8 @@ class BaseEnv(AECEnv):
         self.render_mode = render_mode
         pygame.init()
         self.viewer = None
-        self.width = 70
-        self.height = 150
+        self.width = 50
+        self.height = 100
         self.canvas_scale = 10
         self.screen = pygame.Surface([self.width * self.canvas_scale, self.height * self.canvas_scale])
         self.game_font = pygame.freetype.Font(os.path.join(os.path.dirname(__file__), "secrcode.ttf"), 15)
@@ -191,7 +191,6 @@ class BaseEnv(AECEnv):
         if self.infos[self.agent_selection] is True:
             action = None
 
-        cur_agent = self.agent_selection
         current_idx = self._index_map[self.agent_selection]
         self.current_actions[current_idx] = action
 
@@ -238,29 +237,40 @@ class BaseEnv(AECEnv):
         self.screen.fill((255, 255, 255))
 
         # update geometry and text positions
-        for _, entity in enumerate(self.world.entities):
-            # geometry
-            x, y = entity.pos
-            y = self.height - y     # this makes the display mimic the old pyglet setup (i.e. flips image)
-            x *= self.canvas_scale
-            y *= self.canvas_scale
-            pygame.draw.circle(
-                self.screen, entity.color, (x, y), entity.size * self.canvas_scale
-            )
-            pygame.draw.circle(
-                self.screen, (0, 0, 0), (x, y), entity.size * self.canvas_scale, 1
-            )  # borders
-            # assert (
-            #     0 < x < self.canvas_scale * self.width and 0 < y < self.canvas_scale * self.height
-            # ), f"Coordinates {(x, y)} are out of bounds."
+        for agent, landmark, reference_line in zip(self.world.agents, self.world.landmarks, self.world.reference_lines):
+            # agent
+            x, y = self.world2map(*agent.pos)
+            pygame.draw.circle(self.screen, agent.color, (x, y), agent.size * self.canvas_scale)
+            pygame.draw.circle(self.screen, (0, 0, 0), (x, y), agent.size * self.canvas_scale, 1)  # borders
+
+            # landmark
+            x, y = self.world2map(*landmark.pos)
+            pygame.draw.circle(self.screen, landmark.color, (x, y), landmark.size * self.canvas_scale)
+            pygame.draw.circle(self.screen, (0, 0, 0), (x, y), landmark.size * self.canvas_scale, 1)  # borders
+
+            # reference line
+            points = [self.world2map(x, y) for x, y in zip(reference_line.x, reference_line.y)]
+            pygame.draw.lines(self.screen, agent.color, False, points)
+
+        for obstacle in self.world.obstacles:
+            x, y = self.world2map(*obstacle.pos)
+            pygame.draw.circle(self.screen, obstacle.color, (x, y), obstacle.size * self.canvas_scale)
+            pygame.draw.circle(self.screen, (0, 0, 0), (x, y), obstacle.size * self.canvas_scale, 1)
 
             # text
-            self.game_font.render_to(
-                surf=self.screen, dest=(x, y), text=entity.name, fgcolor=(0, 0, 0)
-            )
+            # self.game_font.render_to(
+            #     surf=self.screen, dest=(x, y), text=entity.name, fgcolor=(0, 0, 0)
+            # )
 
     def close(self):
         if self.renderOn:
             pygame.event.pump()
             pygame.display.quit()
             self.renderOn = False
+
+    def world2map(self, world_x, world_y):
+        x = world_x
+        y = self.height - world_y  # this makes the display mimic the old pyglet setup (i.e. flips image)
+        x *= self.canvas_scale
+        y *= self.canvas_scale
+        return x, y

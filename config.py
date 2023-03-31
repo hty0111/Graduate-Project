@@ -50,6 +50,7 @@ def get_config(argv):
                         help="Which scenario to run on")
     parser.add_argument('--num_agents', type=int, default=2, help="number of agents")
     parser.add_argument("--num_landmarks", type=int, default=2, help="number of landmarks")
+    parser.add_argument("--num_obstacles", type=int, default=10, help="number of obstacles")
     parser.add_argument("--use_obs_instead_of_state", action='store_true', default=False,
                         help="Whether to use global state or concatenated obs")
 
