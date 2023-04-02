@@ -42,7 +42,7 @@ class MPERunner(Runner):
                 #     [b1 or b2 for t1, t2 in zip(terminations, truncations) for b1, b2 in zip(t1, t2)]).reshape(
                 #     terminations.shape
                 # )
-                dones = infos
+                dones = np.array(infos)
 
                 # insert data into buffer
                 data = observations, rewards, dones, infos, values, actions, action_log_probs, rnn_states, rnn_states_critic
@@ -100,8 +100,8 @@ class MPERunner(Runner):
 
         # replay buffer
         if self.use_centralized_V:
-            self_state_dim = len(observations) - 2 * self.num_obstacles
-            self_state, obstacles = observations[:, :, :self_state_dim - 1], observations[:, :, self_state_dim - 1:]
+            self_state_dim = observations.shape[2] - 2 * self.num_obstacles
+            self_state, obstacles = observations[:, :, :self_state_dim], observations[:, :, self_state_dim:]
             state = self_state.reshape(self.n_rollout_threads, -1)
             state = np.expand_dims(state, 1).repeat(self.num_agents, axis=1)
             # (num_envs, num_agents, state_dim)
@@ -144,8 +144,8 @@ class MPERunner(Runner):
         rewards = np.expand_dims(rewards, axis=-1)
 
         if self.use_centralized_V:
-            self_state_dim = len(observations) - 2 * self.num_obstacles
-            self_state, obstacles = observations[:, :, :self_state_dim - 1], observations[:, :, self_state_dim - 1:]
+            self_state_dim = observations.shape[2] - 2 * self.num_obstacles
+            self_state, obstacles = observations[:, :, :self_state_dim], observations[:, :, self_state_dim:]
             state = self_state.reshape(self.n_rollout_threads, -1)
             state = np.expand_dims(state, 1).repeat(self.num_agents, axis=1)
             # (num_envs, num_agents, state_dim)

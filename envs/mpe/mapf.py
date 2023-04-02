@@ -108,7 +108,8 @@ class Scenario:
 
         # set properties for obstacles
         for obstacle in world.obstacles:
-            obstacle.pos = np.array([np_random.uniform(obstacle.size, width - obstacle.size), np_random.uniform(obstacle.size, height - obstacle.size)])
+            obstacle.pos = np.array([np_random.uniform(obstacle.size + world.landmarks[0].size, width - obstacle.size - world.landmarks[0].size),
+                                     np_random.uniform(obstacle.size + world.landmarks[0].size, height - obstacle.size - world.landmarks[0].size)])
             obstacle.color = (0, 0, 0)
             obstacle.size = 0.5
 

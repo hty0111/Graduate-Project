@@ -41,15 +41,15 @@ class SharedReplayBuffer(object):
         self._use_proper_time_limits = args.use_proper_time_limits
 
         obs_shape = get_shape_from_obs_space(obs_space)
-        share_obs_shape = get_shape_from_obs_space(state_space)
+        state_shape = get_shape_from_obs_space(state_space)
 
         if type(obs_shape[-1]) == list:
             obs_shape = obs_shape[:1]
 
-        if type(share_obs_shape[-1]) == list:
-            share_obs_shape = share_obs_shape[:1]
+        if type(state_shape[-1]) == list:
+            state_shape = state_shape[:1]
 
-        self.state = np.zeros((self.episode_length + 1, self.n_rollout_threads, num_agents, *share_obs_shape), dtype=np.float32)
+        self.state = np.zeros((self.episode_length + 1, self.n_rollout_threads, num_agents, *state_shape), dtype=np.float32)
         self.observations = np.zeros((self.episode_length + 1, self.n_rollout_threads, num_agents, *obs_shape), dtype=np.float32)
         self.rnn_states = np.zeros(
             (self.episode_length + 1, self.n_rollout_threads, num_agents, self.recurrent_N, self.hidden_size),
