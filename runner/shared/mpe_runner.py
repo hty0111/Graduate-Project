@@ -42,7 +42,7 @@ class MPERunner(Runner):
                 #     [b1 or b2 for t1, t2 in zip(terminations, truncations) for b1, b2 in zip(t1, t2)]).reshape(
                 #     terminations.shape
                 # )
-                dones = infos
+                dones = np.array(infos)
 
                 # insert data into buffer
                 data = observations, rewards, dones, infos, values, actions, action_log_probs, rnn_states, rnn_states_critic
@@ -64,9 +64,9 @@ class MPERunner(Runner):
                 self.save()
 
             # log information
-            if episode % self.log_interval == 0:
+            if (episode + 1) % self.log_interval == 0:
                 end = time.time()
-                print("\n Scenario {} Algo {} Exp {} updates {}/{} episodes, total num timesteps {}/{}, FPS {}.\n"
+                print("\n Scenario {} Algo {} Exp {} updates {}/{} episodes, total num time steps {}/{}, FPS {}.\n"
                       .format(self.args.scenario_name,
                               self.algorithm_name,
                               self.experiment_name,
@@ -76,15 +76,14 @@ class MPERunner(Runner):
                               self.num_env_steps,
                               int(total_num_steps / (end - start))))
 
-                # if self.env_name == "MPE":
-                #     env_infos = {}
-                #     for agent_id in range(self.num_agents):
-                #         idv_rews = []
-                #         for info in infos:
-                #             if 'individual_reward' in info[agent_id].keys():
-                #                 idv_rews.append(info[agent_id]['individual_reward'])
-                #         agent_k = 'agent%i/individual_rewards' % agent_id
-                #         env_infos[agent_k] = idv_rews
+                # env_infos = {}
+                # for agent_id in range(self.num_agents):
+                #     idv_rews = []
+                #     for info in infos:
+                #         if 'individual_reward' in info[agent_id].keys():
+                #             idv_rews.append(info[agent_id]['individual_reward'])
+                #     agent_k = 'agent%i/individual_rewards' % agent_id
+                #     env_infos[agent_k] = idv_rews
 
                 train_infos["average_episode_rewards"] = np.mean(self.buffer.rewards) * self.episode_length
                 print("average episode rewards is {}".format(train_infos["average_episode_rewards"]))
@@ -101,9 +100,12 @@ class MPERunner(Runner):
 
         # replay buffer
         if self.use_centralized_V:
-            # (num_envs, num_agents, state_dim)
-            state = observations.reshape(self.n_rollout_threads, -1)
+            self_state_dim = observations.shape[2] - 2 * self.num_obstacles
+            self_state, obstacles = observations[:, :, :self_state_dim], observations[:, :, self_state_dim:]
+            state = self_state.reshape(self.n_rollout_threads, -1)
             state = np.expand_dims(state, 1).repeat(self.num_agents, axis=1)
+            # (num_envs, num_agents, state_dim)
+            state = np.concatenate((state, obstacles), axis=2)
         else:
             state = observations
 
@@ -142,8 +144,12 @@ class MPERunner(Runner):
         rewards = np.expand_dims(rewards, axis=-1)
 
         if self.use_centralized_V:
-            state = observations.reshape(self.n_rollout_threads, -1)
+            self_state_dim = observations.shape[2] - 2 * self.num_obstacles
+            self_state, obstacles = observations[:, :, :self_state_dim], observations[:, :, self_state_dim:]
+            state = self_state.reshape(self.n_rollout_threads, -1)
             state = np.expand_dims(state, 1).repeat(self.num_agents, axis=1)
+            # (num_envs, num_agents, state_dim)
+            state = np.concatenate((state, obstacles), axis=2)
         else:
             state = observations
 
@@ -194,68 +200,3 @@ class MPERunner(Runner):
         eval_average_episode_rewards = np.mean(eval_env_infos['eval_average_episode_rewards'])
         print("eval average episode rewards of agent: " + str(eval_average_episode_rewards))
         self.log_env(eval_env_infos, total_num_steps)
-
-    # @torch.no_grad()
-    # def render(self):
-    #     """Visualize the env."""
-    #     envs = self.envs
-    #
-    #     all_frames = []
-    #     for episode in range(self.all_args.render_episodes):
-    #         observations = envs.reset()
-    #         if self.all_args.save_gifs:
-    #             image = envs.render('rgb_array')[0][0]
-    #             all_frames.append(image)
-    #         else:
-    #             envs.render('human')
-    #
-    #         rnn_states = np.zeros((self.n_rollout_threads, self.num_agents, self.recurrent_N, self.hidden_size), dtype=np.float32)
-    #         masks = np.ones((self.n_rollout_threads, self.num_agents, 1), dtype=np.float32)
-    #
-    #         episode_rewards = []
-    #
-    #         for step in range(self.episode_length):
-    #             calc_start = time.time()
-    #
-    #             self.trainer.prep_rollout()
-    #             action, rnn_states = self.trainer.policy.act(np.concatenate(observations),
-    #                                                 np.concatenate(rnn_states),
-    #                                                 np.concatenate(masks),
-    #                                                 deterministic=True)
-    #             actions = np.array(np.split(t2n(action), self.n_rollout_threads))
-    #             rnn_states = np.array(np.split(t2n(rnn_states), self.n_rollout_threads))
-    #
-    #             if envs.action_space[0].__class__.__name__ == 'MultiDiscrete':
-    #                 for i in range(envs.action_space[0].shape):
-    #                     uc_actions_env = np.eye(envs.action_space[0].high[i]+1)[actions[:, :, i]]
-    #                     if i == 0:
-    #                         actions_env = uc_actions_env
-    #                     else:
-    #                         actions_env = np.concatenate((actions_env, uc_actions_env), axis=2)
-    #             elif envs.action_space[0].__class__.__name__ == 'Discrete':
-    #                 actions_env = np.squeeze(np.eye(envs.action_space[0].n)[actions], 2)
-    #             else:
-    #                 raise NotImplementedError
-    #
-    #             # Obser reward and next observations
-    #             observations, rewards, dones, infos = envs.step(actions_env)
-    #             episode_rewards.append(rewards)
-    #
-    #             rnn_states[dones == True] = np.zeros(((dones == True).sum(), self.recurrent_N, self.hidden_size), dtype=np.float32)
-    #             masks = np.ones((self.n_rollout_threads, self.num_agents, 1), dtype=np.float32)
-    #             masks[dones == True] = np.zeros(((dones == True).sum(), 1), dtype=np.float32)
-    #
-    #             if self.all_args.save_gifs:
-    #                 image = envs.render('rgb_array')[0][0]
-    #                 all_frames.append(image)
-    #                 calc_end = time.time()
-    #                 elapsed = calc_end - calc_start
-    #                 if elapsed < self.all_args.ifi:
-    #                     time.sleep(self.all_args.ifi - elapsed)
-    #             else:
-    #                 envs.render('human')
-    #
-    #         print("average episode rewards is: " + str(np.mean(np.sum(np.array(episode_rewards), axis=0))))
-    #
-    #     if self.all_args.save_gifs:
-    #         imageio.mimsave(str(self.gif_dir) + '/render.gif', all_frames, duration=self.all_args.ifi)
