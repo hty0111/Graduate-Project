@@ -2,7 +2,7 @@
 Author: HTY
 Email: 1044213317@qq.com
 Date: 2023-03-05 14:59
-Description: Entity Properties
+Description:
 """
 
 import numpy as np

@@ -134,7 +134,6 @@ def main(argv):
         "envs": envs,
         "eval_envs": eval_envs,
         "num_agents": args.num_agents,
-        "num_obstacles": args.num_obstacles,
         "device": device,
         "run_dir": run_dir
     }

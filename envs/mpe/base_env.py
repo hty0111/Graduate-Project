@@ -84,7 +84,7 @@ class BaseEnv(AECEnv):
             action_dim = self.planner.sample_dim
 
             obs_dim = len(self.scenario.observation(agent, self.world.landmarks[self._index_map[agent.name]], self.world))
-            state_dim += obs_dim - len(self.world.obstacles) * 2    # 不重复计算障碍物
+            state_dim += obs_dim
             self.action_spaces[agent.name] = spaces.Discrete(action_dim)
             self.observation_spaces[agent.name] = spaces.Box(
                 low=-np.float32(np.inf),
@@ -92,9 +92,8 @@ class BaseEnv(AECEnv):
                 shape=(obs_dim,),
                 dtype=np.float32,
             )
-        state_dim += len(self.world.obstacles) * 2
 
-        # state是每个agent的observation，障碍物信息只保存一遍
+        # state是每个agent的observation
         self.state_space = spaces.Box(
             low=-np.float32(np.inf),
             high=+np.float32(np.inf),
@@ -116,17 +115,13 @@ class BaseEnv(AECEnv):
 
     def observe(self, agent: str):
         return self.scenario.observation(
-            self.world.agents[self._index_map[agent]],
-            self.world.landmarks[self._index_map[agent]],
-            self.world
+            self.world.agents[self._index_map[agent]], self.world.landmarks[self._index_map[agent]], self.world
         ).astype(np.float32)
 
     def state(self):
         states = tuple(
             self.scenario.observation(
-                self.world.agents[self._index_map[agent]],
-                self.world.landmarks[self._index_map[agent]],
-                self.world
+                self.world.agents[self._index_map[agent]], self.world.landmarks[self._index_map[agent]], self.world
             ).astype(np.float32)
             for agent in self.possible_agents
         )
@@ -154,48 +149,20 @@ class BaseEnv(AECEnv):
         for i, agent in enumerate(self.world.agents):
             action = self.current_actions[i]
             reference_line = self.world.reference_lines[i]
+            plt.plot(reference_line.x, reference_line.y)
+            plt.plot(agent.pos[0], agent.pos[1], "gx")
+            plt.xlim(0, self.width)
+            plt.ylim(0, self.height)
             if agent.movable is True and action is not None:
-                s, d = self.planner.cartesian_to_frenet(reference_line, *agent.pos)
-                yaw = reference_line.yaw
-                s_d = agent.vel[0] * np.cos(yaw) + agent.vel[1] * np.sin(yaw)
-                d_d = agent.vel[0] * np.sin(yaw) + agent.vel[1] * np.cos(yaw)
-                paths = self.planner.calc_frenet_paths(s, s_d, 0, d, d_d, 0)
-
-                path = paths[action]
-                s_step = path.lon_traj.calc_point(self.step_dt)
-                s_d_step = path.lon_traj.calc_first_derivative(self.step_dt)
-                d_step = path.lat_traj.calc_point(self.step_dt)
-                d_d_step = path.lat_traj.calc_first_derivative(self.step_dt)
-
-                agent.pos = np.array(self.planner.frenet_to_cartesian(reference_line, s_step, d_step))
-                agent.vel[0] = s_d_step * np.cos(yaw) + d_d_step * np.sin(yaw)
-                agent.vel[1] = s_d_step * np.sin(yaw) + d_d_step * np.cos(yaw)
-
-                # if self.render_mode == 'human':
-                #     for t in range(self.step_dt):
-                #         plt.cla()
-                #         # for stopping simulation with the esc key.
-                #         plt.gcf().canvas.mpl_connect(
-                #             'key_release_event',
-                #             lambda event: [exit(0) if event.key == 'escape' else None])
-                #         plt.plot(agent.pos[0], agent.pos[1], "gx")
-                #         plt.plot((obs.pos[0], obs.pos[1]) for obs in self.world.obstacles)
-                #         plt.plot(reference_line.x, reference_line.y)
-                #         # plt.plot(path.x[1:], path.y[1:], "-or")
-                #         # plt.plot(path.x[1], path.y[1], "vc")
-                #         plt.xlim(0, self.width)
-                #         plt.ylim(0, self.height)
-                #         # plt.title("v[km/h]:" + str(c_speed * 3.6)[0:4])
-                #         plt.plot(pos_x, pos_y, "rx")
-                #         plt.grid(True)
-                #         plt.pause(0.0001)
-
-            reward = float(self.scenario.reward(agent, self.world.landmarks[self._index_map[agent.name]], self.world))
-            self.rewards[agent.name] = reward if action is not None else 0  # 如果done就把reward设为0
-            self.infos[agent.name] = self.done(agent)
-
+                agent.pos, agent.vel = self._set_action(agent.pos, agent.vel, action, reference_line, self.step_dt)
+            plt.plot(agent.pos[0], agent.pos[1], "rx")
         # plt.show()
         # self.world.step()
+
+        for agent in self.world.agents:
+            reward = float(self.scenario.reward(agent, self.world.landmarks[self._index_map[agent.name]], self.world))
+            self.rewards[agent.name] = reward
+            self.infos[agent.name] = self.done(agent)
 
     def done(self, agent) -> bool:
         landmark = self.world.landmarks[self._index_map[agent.name]]
@@ -205,6 +172,20 @@ class BaseEnv(AECEnv):
             return True
         else:
             return False
+
+    # set env action for a particular agent
+    def _set_action(self, pos, vel, action, reference_line, dt) -> tuple:
+        s, d, s_d, d_d = self.planner.cartesian_to_frenet(reference_line, *pos, *vel)
+        paths = self.planner.calc_frenet_paths(s, s_d, 0, d, d_d, 0)
+
+        path = paths[action]
+        s_step = path.lon_traj.calc_point(dt)
+        s_d_step = path.lon_traj.calc_first_derivative(dt)
+        d_step = path.lat_traj.calc_point(dt)
+        d_d_step = path.lat_traj.calc_first_derivative(dt)
+        pos_x, pos_y, vel_x, vel_y = self.planner.frenet_to_cartesian(reference_line, s_step, d_step, s_d_step, d_d_step)
+
+        return np.array([pos_x, pos_y]), np.array([vel_x, vel_y])
 
     def step(self, action):
         if self.infos[self.agent_selection] is True:
