@@ -42,12 +42,13 @@ class FrenetPath:
 
 class LatticePlanner:
     # Parameter
-    MAX_V = 5  # maximum speed [m/s]
-    MIN_V = 1  # minimum speed [m/s]
-    DELTA_V = 1  # speed sampling length [m/s]
+    MAX_V = 5   # maximum speed [m/s]
+    MIN_V = 1   # minimum speed [m/s]
+    DELTA_V = 1 # speed sampling length [m/s]
 
-    MAX_D = 3.0  # maximum road width [m]
-    DELTA_D = 1.0  # road width sampling length [m]
+    MAX_D = 3.0     # maximum road width [m]
+    MIN_D = -3.0    # minimun road width [m]
+    DELTA_D = 1.0   # road width sampling length [m]
 
     MAX_T = 8.0  # max prediction time [s]
     MIN_T = 4.0  # min prediction time [s]
@@ -72,9 +73,17 @@ class LatticePlanner:
         self.t_dim = int((self.MAX_T - self.MIN_T) / self.DELTA_T + 1)  # 3
         self.v_dim = int((self.MAX_V - self.MIN_V) / self.DELTA_V + 1)  # 5
         self.s_dim = int((self.MAX_S - self.MIN_S) / self.DELTA_S + 1)  # 5
-        self.d_dim = int((self.MAX_D + self.MAX_D) / self.DELTA_D + 1)  # 7
+        self.d_dim = int((self.MAX_D - self.MIN_D) / self.DELTA_D + 1)  # 7
         self.sample_dim = int(self.t_dim * self.v_dim * self.d_dim)
         self.dt = 0.2
+
+        self.index_dict = {}
+        index = 0
+        for ti in np.arange(self.MIN_T, self.MAX_T + self.DELTA_T, self.DELTA_T):  # 轨迹时间
+            for di in np.arange(-self.MAX_D, self.MAX_D + self.DELTA_D, self.DELTA_D):  # 道路宽度
+                for vi in np.arange(self.MIN_V, self.MAX_V + self.DELTA_V, self.DELTA_V):  # 末端速度
+                    self.index_dict[index] = (ti, di, vi)
+                    index += 1
 
     def calc_frenet_paths(self, s, s_d, s_dd, d, d_d, d_dd):
         frenet_paths = []
@@ -85,11 +94,11 @@ class LatticePlanner:
                 lat_traj = QuinticPolynomial(d, d_d, d_dd, di, 0.0, 0.0, ti)
                 fp = FrenetPath()
                 fp.lat_traj = lat_traj
-                fp.t = [t for t in np.arange(0.0, ti, self.dt)]
-                fp.d = [lat_traj.calc_point(t) for t in fp.t]
-                fp.d_d = [lat_traj.calc_first_derivative(t) for t in fp.t]
-                fp.d_dd = [lat_traj.calc_second_derivative(t) for t in fp.t]
-                fp.d_ddd = [lat_traj.calc_third_derivative(t) for t in fp.t]
+                fp.t = np.arange(0.0, ti, self.dt)
+                fp.d = lat_traj.calc_point(fp.t)
+                fp.d_d = lat_traj.calc_first_derivative(fp.t)
+                fp.d_dd = lat_traj.calc_second_derivative(fp.t)
+                fp.d_ddd = lat_traj.calc_third_derivative(fp.t)
 
                 for vi in np.arange(self.MIN_V, self.MAX_V + self.DELTA_V, self.DELTA_V):  # 末端速度
                     lon_traj = QuarticPolynomial(s, s_d, s_dd, vi, 0.0, ti)
@@ -99,15 +108,27 @@ class LatticePlanner:
                     fp_copy = copy.deepcopy(fp)
                     fp_copy.lon_traj = lon_traj
                     fp_copy.index = index
-                    fp_copy.s = [lon_traj.calc_point(t) for t in fp.t]
-                    fp_copy.s_d = [lon_traj.calc_first_derivative(t) for t in fp.t]
-                    fp_copy.s_dd = [lon_traj.calc_second_derivative(t) for t in fp.t]
-                    fp_copy.s_ddd = [lon_traj.calc_third_derivative(t) for t in fp.t]
+
+                    fp_copy.t = np.arange(0.0, ti, self.dt)
+                    fp_copy.s = lon_traj.calc_point(fp.t)
+                    fp_copy.s_d = lon_traj.calc_first_derivative(fp.t)
+                    fp_copy.s_dd = lon_traj.calc_second_derivative(fp.t)
+                    fp_copy.s_ddd = lon_traj.calc_third_derivative(fp.t)
+
                     frenet_paths.append(fp_copy)
                     index += 1
                     # if check_paths(fp_copy):
                     #     frenet_paths.append(fp_copy)
         return frenet_paths
+    
+    def calc_frenet_path(self, s, s_d, s_dd, d, d_d, d_dd, index):
+        t, d, v = self.index_dict[index]
+        fp = FrenetPath()
+        fp.t = np.arange(0.0, t, self.dt)
+        fp.lat_traj = QuinticPolynomial(d, d_d, d_dd, d, 0.0, 0.0, t)
+        fp.lon_traj = QuarticPolynomial(s, s_d, s_dd, v, 0.0, t)
+
+        return fp
 
     def calc_cartesian_paths(self, frenet_path, reference_line):
         # calc global positions
@@ -175,7 +196,7 @@ class LatticePlanner:
 
         return best_path
 
-    def generate_target_course(self, x: list, y: list) -> (list, list, list, list, CubicSpline2D):
+    def generate_target_course(self, x: list, y: list):
         reference_line = CubicSpline2D(x, y)
         s_list = np.arange(0, reference_line.s[-1], 0.1)
 

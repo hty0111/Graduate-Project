@@ -108,6 +108,7 @@ def main(argv):
         else:
             exist_run_nums = [int(str(folder.name).split('run')[1]) for folder in run_dir.iterdir() if
                               str(folder.name).startswith('run')]
+            print(exist_run_nums)
             if len(exist_run_nums) == 0:
                 curr_run = 'run1'
             else:

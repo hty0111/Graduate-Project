@@ -159,9 +159,10 @@ class BaseEnv(AECEnv):
                 yaw = reference_line.yaw
                 s_d = agent.vel[0] * np.cos(yaw) + agent.vel[1] * np.sin(yaw)
                 d_d = agent.vel[0] * np.sin(yaw) + agent.vel[1] * np.cos(yaw)
-                paths = self.planner.calc_frenet_paths(s, s_d, 0, d, d_d, 0)
-
-                path = paths[action]
+                
+                # paths = self.planner.calc_frenet_paths(s, s_d, 0, d, d_d, 0)
+                # path = paths[action]
+                path = self.planner.calc_frenet_path(s, s_d, 0, d, d_d, 0, action)
                 s_step = path.lon_traj.calc_point(self.step_dt)
                 s_d_step = path.lon_traj.calc_first_derivative(self.step_dt)
                 d_step = path.lat_traj.calc_point(self.step_dt)
@@ -222,8 +223,8 @@ class BaseEnv(AECEnv):
         else:
             self._clear_rewards()
 
-        if self.render_mode == "human":
-            self.render()
+        # if self.render_mode == "human":
+        #     self.render()
 
         self.agent_selection = self._agent_selector.next()
 
