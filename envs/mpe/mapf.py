@@ -80,12 +80,18 @@ class Scenario:
         return world
 
     def reset_world(self, world, np_random, width, height):
-        random_index = np_random.permutation(range(0, len(world.landmarks)))
+        num_agents = len(world.agents)
+        random_index = np_random.permutation(range(0, num_agents))
 
         # set properties & states for agents & landmarks
+        # for i in range(num_agents):
+        #     delta_x = width / (num_agents + 1)
+        #     world.agents[i].pos = np.array()
+
+        random_flag = True
         for i, (agent, landmark) in enumerate(zip(world.agents, world.landmarks)):
             # 智能体起点按序均匀分布
-            delta_x = width / (len(world.agents) + 1)
+            delta_x = width / (num_agents + 1)
             agent.pos = np.array([delta_x * (i + 1), agent.size])  # bottom
             agent.vel = np.zeros(world.dim_p)
             agent.c = np.zeros(world.dim_c)
@@ -93,18 +99,28 @@ class Scenario:
 
             # 避免终点重合
 
-            while True:
-                x = np_random.uniform(landmark.size, width - landmark.size)
-                success = True
-                for l in world.landmarks:
-                    if l.pos is not None and np.abs(x - l.pos[0]) < landmark.size + l.size:
-                        success = False
-                        break
-                if success is True:
-                    break
-            landmark.pos = np.array([x, height - landmark.size])  # top
+            # while True:
+            #     x = np_random.uniform(landmark.size, width - landmark.size)
+            #     success = True
+            #     for l in world.landmarks:
+            #         if l.pos is not None and np.abs(x - l.pos[0]) < landmark.size + l.size:
+            #             success = False
+            #             break
+            #     if success is True:
+            #         break
+            # landmark.pos = np.array([x, height - landmark.size])  # top
 
-            # landmark.pos = np.array([delta_x * (random_index[i] + 1), height - landmark.size])
+            if random_flag is False:
+                landmark.pos = np.array([delta_x * (random_index[i - 1] + 1), height - landmark.size])
+                random_flag = True
+            elif random_index[i] == i and i != num_agents - 1:
+                landmark.pos = np.array([delta_x * (random_index[i + 1] + 1), height - landmark.size])
+                random_flag = False
+            elif i == num_agents - 1:
+                landmark.pos = np.array([delta_x * (random_index[i] + 1) + 0.1, height - landmark.size])
+            else:
+                landmark.pos = np.array([delta_x * (random_index[i] + 1), height - landmark.size])
+
             landmark.vel = np.zeros(world.dim_p)
             landmark.color = agent.color
 
