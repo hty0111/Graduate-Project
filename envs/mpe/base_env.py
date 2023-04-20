@@ -191,7 +191,7 @@ class BaseEnv(AECEnv):
                 #         plt.grid(True)
                 #         plt.pause(0.0001)
 
-            reward = float(self.scenario.reward(agent, self.world.landmarks[self._index_map[agent.name]], self.world))
+            reward = float(self.scenario.reward(agent, self.world, self.infos))
             self.rewards[agent.name] = reward if action is not None else 0  # 如果done就把reward设为0
             self.infos[agent.name] = self.done(agent)
 
