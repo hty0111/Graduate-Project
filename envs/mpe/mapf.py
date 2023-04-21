@@ -176,9 +176,6 @@ class Scenario:
 
         obstacles_pos = [obstacle.pos for obstacle in world.obstacles]
 
-        # return np.concatenate(
-        #     [agent.vel] + [agent.pos] + [landmark.pos] + obstacles_pos
-        # )
         return np.concatenate(
-            [agent.vel] + [agent.pos] + [landmark.pos]
+            [agent.vel] + [agent.pos] + [landmark.pos] + obstacles_pos
         )
