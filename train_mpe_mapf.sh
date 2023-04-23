@@ -1,13 +1,13 @@
 #!/bin/sh
 env="MPE"
 scenario="mapf"
-num_agents=10
+num_agents=12
 num_obstacles=0
 algo="mappo" #"rmappo" "ippo"
 num_steps=50000000
 n_rollout_threads=64
 seed_max=1
-version="v1.3"
+version="v1.4"
 
 exp="agents_${num_agents}_obs_${num_obstacles}_version_${version}"
 echo "env is ${env}, scenario is ${scenario}, algo is ${algo}, exp is ${exp}, max seed is ${seed_max}"
