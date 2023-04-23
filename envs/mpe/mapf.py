@@ -80,8 +80,10 @@ class Scenario:
         return world
 
     def reset_world(self, world, np_random, width, height):
+        random_index = np_random.permutation(range(0, len(world.landmarks)))
+
         # set properties & states for agents & landmarks
-        for i, (agent, landmark, reference_line) in enumerate(zip(world.agents, world.landmarks, world.reference_lines)):
+        for i, (agent, landmark) in enumerate(zip(world.agents, world.landmarks)):
             # 智能体起点按序均匀分布
             delta_x = width / (len(world.agents) + 1)
             agent.pos = np.array([delta_x * (i + 1), agent.size])  # bottom
@@ -89,7 +91,8 @@ class Scenario:
             agent.c = np.zeros(world.dim_c)
             agent.color = np_random.uniform(0, 255, size=3)
 
-            # 避免重点重合
+            # 避免终点重合
+
             while True:
                 x = np_random.uniform(landmark.size, width - landmark.size)
                 success = True
@@ -100,6 +103,8 @@ class Scenario:
                 if success is True:
                     break
             landmark.pos = np.array([x, height - landmark.size])  # top
+
+            # landmark.pos = np.array([delta_x * (random_index[i] + 1), height - landmark.size])
             landmark.vel = np.zeros(world.dim_p)
             landmark.color = agent.color
 

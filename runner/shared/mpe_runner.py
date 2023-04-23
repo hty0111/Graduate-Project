@@ -106,6 +106,9 @@ class MPERunner(Runner):
             state = np.expand_dims(state, 1).repeat(self.num_agents, axis=1)
             # (num_envs, num_agents, state_dim)
             state = np.concatenate((state, obstacles), axis=2)
+            # print("self state: ", self_state)
+            # print("obstacles", obstacles)
+            # print("state: ", state)
         else:
             state = observations
 
