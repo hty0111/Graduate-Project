@@ -146,7 +146,7 @@ def get_config(argv):
                         help="time duration between continuous twice models saving.")
 
     # log parameters
-    parser.add_argument("--log_interval", type=int, default=3,
+    parser.add_argument("--log_interval", type=int, default=5,
                         help="time duration between continuous twice log printing.")
 
     # eval parameters
