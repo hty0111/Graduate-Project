@@ -223,8 +223,8 @@ class BaseEnv(AECEnv):
         else:
             self._clear_rewards()
 
-        if self.render_mode == "human":
-            self.render()
+        # if self.render_mode == "human":
+        #     self.render()
 
         self.agent_selection = self._agent_selector.next()
 

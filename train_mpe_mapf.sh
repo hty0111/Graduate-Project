@@ -1,7 +1,7 @@
 #!/bin/sh
 env="MPE"
 scenario="mapf"
-num_agents=12
+num_agents=10
 num_obstacles=0
 algo="mappo" #"rmappo" "ippo"
 num_steps=50000000
