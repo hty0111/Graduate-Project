@@ -172,28 +172,12 @@ class BaseEnv(AECEnv):
                 agent.vel[0] = s_d_step * np.cos(yaw) + d_d_step * np.sin(yaw)
                 agent.vel[1] = s_d_step * np.sin(yaw) + d_d_step * np.cos(yaw)
 
-                # if self.render_mode == 'human':
-                #     for t in range(self.step_dt):
-                #         plt.cla()
-                #         # for stopping simulation with the esc key.
-                #         plt.gcf().canvas.mpl_connect(
-                #             'key_release_event',
-                #             lambda event: [exit(0) if event.key == 'escape' else None])
-                #         plt.plot(agent.pos[0], agent.pos[1], "gx")
-                #         plt.plot((obs.pos[0], obs.pos[1]) for obs in self.world.obstacles)
-                #         plt.plot(reference_line.x, reference_line.y)
-                #         # plt.plot(path.x[1:], path.y[1:], "-or")
-                #         # plt.plot(path.x[1], path.y[1], "vc")
-                #         plt.xlim(0, self.width)
-                #         plt.ylim(0, self.height)
-                #         # plt.title("v[km/h]:" + str(c_speed * 3.6)[0:4])
-                #         plt.plot(pos_x, pos_y, "rx")
-                #         plt.grid(True)
-                #         plt.pause(0.0001)
-
-            reward = float(self.scenario.reward(agent, self.world, self.infos))
-            self.rewards[agent.name] = reward if action is not None else 0  # 如果done就把reward设为0
-            self.infos[agent.name] = self.done(agent)
+                scenario_reward = float(self.scenario.reward(agent, self.world, self.infos))
+                path_reward = 0 if self.planner.check_paths(path) else -1
+                self.rewards[agent.name] = scenario_reward + path_reward
+                self.infos[agent.name] = self.done(agent)
+            else:
+                self.rewards[agent.name] = 0
 
         # plt.show()
         # self.world.step()

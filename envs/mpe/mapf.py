@@ -84,10 +84,6 @@ class Scenario:
         random_index = np_random.permutation(range(0, num_agents))
 
         # set properties & states for agents & landmarks
-        # for i in range(num_agents):
-        #     delta_x = width / (num_agents + 1)
-        #     world.agents[i].pos = np.array()
-
         random_flag = True
         for i, (agent, landmark) in enumerate(zip(world.agents, world.landmarks)):
             # 智能体起点按序均匀分布

@@ -50,8 +50,8 @@ class LatticePlanner:
     MIN_D = -3.0    # minimun road width [m]
     DELTA_D = 1.0   # road width sampling length [m]
 
-    MAX_T = 10.0  # max prediction time [s]
-    MIN_T = 2.0  # min prediction time [s]
+    MAX_T = 8.0  # max prediction time [s]
+    MIN_T = 4.0  # min prediction time [s]
     DELTA_T = 2  # time tick [s]
 
     MAX_S = 30.0  # max longitude distance [m]
@@ -127,6 +127,14 @@ class LatticePlanner:
         fp.t = np.arange(0.0, t, self.dt)
         fp.lat_traj = QuinticPolynomial(d, d_d, d_dd, d, 0.0, 0.0, t)
         fp.lon_traj = QuarticPolynomial(s, s_d, s_dd, v, 0.0, t)
+        fp.d = fp.lat_traj.calc_point(fp.t)
+        fp.d_d = fp.lat_traj.calc_first_derivative(fp.t)
+        fp.d_dd = fp.lat_traj.calc_second_derivative(fp.t)
+        fp.d_ddd = fp.lat_traj.calc_third_derivative(fp.t)
+        fp.s = fp.lon_traj.calc_point(fp.t)
+        fp.s_d = fp.lon_traj.calc_first_derivative(fp.t)
+        fp.s_dd = fp.lon_traj.calc_second_derivative(fp.t)
+        fp.s_ddd = fp.lon_traj.calc_third_derivative(fp.t)
 
         return fp
 
