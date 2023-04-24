@@ -6,8 +6,8 @@ num_obstacles=0
 algo="mappo" #"rmappo" "ippo"
 num_steps=50000000
 n_rollout_threads=64
-seed_max=2
-version="v1.7"
+seed_max=1
+version="v1.8"
 
 exp="${version}_agents_${num_agents}_obs_${num_obstacles}_threads_${n_rollout_threads}"
 echo "env is ${env}, scenario is ${scenario}, algo is ${algo}, exp is ${exp}, max seed is ${seed_max}"
