@@ -90,21 +90,21 @@ class Scenario:
 
         random_flag = True
         for i, (agent, landmark) in enumerate(zip(world.agents, world.landmarks)):
-            # # 智能体起点按序均匀分布
-            # delta_x = width / (num_agents + 1)
-            # agent.pos = np.array([delta_x * (i + 1), agent.size])  # bottom
+            # 智能体起点按序均匀分布
+            delta_x = width / (num_agents + 1)
+            agent.pos = np.array([delta_x * (i + 1), agent.size])  # bottom
 
-            # 起点随机
-            while True:
-                x = np_random.uniform(agent.size, width - agent.size)
-                success = True
-                for a in world.agents:
-                    if a.pos is not None and np.abs(x - a.pos[0]) < agent.size + a.size:
-                        success = False
-                        break
-                if success is True:
-                    break
-            agent.pos = np.array([x, agent.size])  # bottom
+            # # 起点随机
+            # while True:
+            #     x = np_random.uniform(agent.size, width - agent.size)
+            #     success = True
+            #     for a in world.agents:
+            #         if a.pos is not None and np.abs(x - a.pos[0]) < agent.size + a.size:
+            #             success = False
+            #             break
+            #     if success is True:
+            #         break
+            # agent.pos = np.array([x, agent.size])  # bottom
 
             agent.vel = np.zeros(world.dim_p)
             agent.c = np.zeros(world.dim_c)

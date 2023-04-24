@@ -7,9 +7,9 @@ algo="mappo" #"rmappo" "ippo"
 num_steps=50000000
 n_rollout_threads=64
 seed_max=2
-version="v1.6"
+version="v1.7"
 
-exp="agents_${num_agents}_obs_${num_obstacles}_version_${version}"
+exp="${version}_agents_${num_agents}_obs_${num_obstacles}_threads_${n_rollout_threads}"
 echo "env is ${env}, scenario is ${scenario}, algo is ${algo}, exp is ${exp}, max seed is ${seed_max}"
 for seed in `seq ${seed_max}`;
 do
