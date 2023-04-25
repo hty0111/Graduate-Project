@@ -7,4 +7,5 @@ devel
 bin
 cmake-build-debug
 test*
+results
 *.so
