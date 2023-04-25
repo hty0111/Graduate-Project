@@ -4,6 +4,7 @@ Email: 1044213317@qq.com
 Date: 2023-02-19 21:53
 Description: Modified from MPE to work with tasks for multi-agent path finding
 """
+import time
 
 from algorithms.lattice.frenet_lattice import LatticePlanner
 
@@ -154,14 +155,12 @@ class BaseEnv(AECEnv):
         for i, agent in enumerate(self.world.agents):
             action = self.current_actions[i]
             reference_line = self.world.reference_lines[i]
-            if agent.movable is True and action is not None:
+            if action is not None:
                 s, d = self.planner.cartesian_to_frenet(reference_line, *agent.pos)
                 yaw = reference_line.yaw
                 s_d = agent.vel[0] * np.cos(yaw) + agent.vel[1] * np.sin(yaw)
                 d_d = agent.vel[0] * np.sin(yaw) + agent.vel[1] * np.cos(yaw)
-                
-                # paths = self.planner.calc_frenet_paths(s, s_d, 0, d, d_d, 0)
-                # path = paths[action]
+
                 path = self.planner.calc_frenet_path(s, s_d, 0, d, d_d, 0, action)
                 s_step = path.lon_traj.calc_point(self.step_dt)
                 s_d_step = path.lon_traj.calc_first_derivative(self.step_dt)
@@ -172,27 +171,23 @@ class BaseEnv(AECEnv):
                 agent.vel[0] = s_d_step * np.cos(yaw) + d_d_step * np.sin(yaw)
                 agent.vel[1] = s_d_step * np.sin(yaw) + d_d_step * np.cos(yaw)
 
-                # if self.render_mode == 'human':
-                #     for t in range(self.step_dt):
-                #         plt.cla()
-                #         # for stopping simulation with the esc key.
-                #         plt.gcf().canvas.mpl_connect(
-                #             'key_release_event',
-                #             lambda event: [exit(0) if event.key == 'escape' else None])
-                #         plt.plot(agent.pos[0], agent.pos[1], "gx")
-                #         plt.plot((obs.pos[0], obs.pos[1]) for obs in self.world.obstacles)
-                #         plt.plot(reference_line.x, reference_line.y)
-                #         # plt.plot(path.x[1:], path.y[1:], "-or")
-                #         # plt.plot(path.x[1], path.y[1], "vc")
-                #         plt.xlim(0, self.width)
-                #         plt.ylim(0, self.height)
-                #         # plt.title("v[km/h]:" + str(c_speed * 3.6)[0:4])
-                #         plt.plot(pos_x, pos_y, "rx")
-                #         plt.grid(True)
-                #         plt.pause(0.0001)
+                # path.d = path.lat_traj.calc_point(path.t)
+                # path.d_d = path.lat_traj.calc_first_derivative(path.t)
+                # path.d_dd = path.lat_traj.calc_second_derivative(path.t)
+                # path.d_ddd = path.lat_traj.calc_third_derivative(path.t)
+                # path.s = path.lon_traj.calc_point(path.t)
+                # path.s_d = path.lon_traj.calc_first_derivative(path.t)
+                # path.s_dd = path.lon_traj.calc_second_derivative(path.t)
+                # path.s_ddd = path.lon_traj.calc_third_derivative(path.t)
+                # agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
 
-            reward = float(self.scenario.reward(agent, self.world, self.infos))
-            self.rewards[agent.name] = reward if action is not None else 0  # 如果done就把reward设为0
+                scenario_reward = float(self.scenario.reward(agent, self.world, self.infos))
+                # path_reward = 0 if self.planner.check_paths(path) else -1
+                # self.rewards[agent.name] = scenario_reward + path_reward
+                self.rewards[agent.name] = scenario_reward
+            else:
+                self.rewards[agent.name] = 0
+
             self.infos[agent.name] = self.done(agent)
 
         # plt.show()
@@ -223,8 +218,9 @@ class BaseEnv(AECEnv):
         else:
             self._clear_rewards()
 
-        if self.render_mode == "human":
-            self.render()
+        # if self.render_mode == "human":
+        #     self.render()
+        #     time.sleep(2)
 
         self.agent_selection = self._agent_selector.next()
 
@@ -262,6 +258,13 @@ class BaseEnv(AECEnv):
             x, y = self.world2map(*agent.pos)
             pygame.draw.circle(self.screen, agent.color, (x, y), agent.size * self.canvas_scale)
             pygame.draw.circle(self.screen, (0, 0, 0), (x, y), agent.size * self.canvas_scale, 1)  # borders
+
+            # trajectory
+            if agent.trajectory is not None:
+                trajectory_points = [(self.world2map(x, y)) for (x, y) in agent.trajectory]
+                pygame.draw.lines(self.screen, agent.color, False, trajectory_points)
+                pygame.draw.circle(self.screen, agent.color, trajectory_points[0], agent.size * self.canvas_scale)
+                pygame.draw.circle(self.screen, (0, 0, 0), trajectory_points[0], agent.size * self.canvas_scale, 1)  # borders
 
             # landmark
             x, y = self.world2map(*landmark.pos)

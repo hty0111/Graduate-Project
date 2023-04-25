@@ -122,11 +122,11 @@ class LatticePlanner:
         return frenet_paths
     
     def calc_frenet_path(self, s, s_d, s_dd, d, d_d, d_dd, index):
-        t, d, v = self.index_dict[index]
+        ti, di, vi = self.index_dict[index]
         fp = FrenetPath()
-        fp.t = np.arange(0.0, t, self.dt)
-        fp.lat_traj = QuinticPolynomial(d, d_d, d_dd, d, 0.0, 0.0, t)
-        fp.lon_traj = QuarticPolynomial(s, s_d, s_dd, v, 0.0, t)
+        fp.t = np.arange(0.0, ti, self.dt)
+        fp.lat_traj = QuinticPolynomial(d, d_d, d_dd, di, 0.0, 0.0, ti)
+        fp.lon_traj = QuarticPolynomial(s, s_d, s_dd, vi, 0.0, ti)
 
         return fp
 
@@ -211,17 +211,18 @@ class LatticePlanner:
         return x_list, y_list, yaw_list, curvature_list, reference_line
 
     def cartesian_to_frenet(self, reference_line, x, y):
+        """ s前为正，d左为正 """
         xi, yi = reference_line.calc_perpendicular_point(x, y)
         s = reference_line.calc_s(xi)
-        d = np.hypot(y - yi, x - xi)
+        d = np.hypot(y - yi, x - xi) if x <= xi else -np.hypot(y - yi, x - xi)
         return s, d
 
     def frenet_to_cartesian(self, reference_line, s, d):
         x, y = reference_line.calc_position(s)
         # yaw = reference_line.calc_yaw(s)
         yaw = reference_line.yaw
-        x += d * np.sin(yaw)
-        y -= d * np.cos(yaw)
+        x -= d * np.sin(yaw)
+        y += d * np.cos(yaw)
         return x, y
 
 

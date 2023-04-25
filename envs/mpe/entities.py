@@ -60,6 +60,7 @@ class Agent(Entity):  # properties of agent entities
         self.vel = None
         # communication
         self.c = None
+        self.trajectory = None
 
 
 class Obstacle(Entity):
@@ -82,7 +83,7 @@ class ReferenceLine:
 
     def calc_s(self, x):
         y = self.calc_y(x)
-        return np.hypot(x - self.x[0], y - self.y[0])
+        return np.hypot(x - self.x[0], y - self.y[0]) if y > self.y[0] else -np.hypot(x - self.x[0], y - self.y[0])
 
     def calc_position(self, s):
         x = self.x[0] + s * np.cos(self.yaw)
@@ -90,7 +91,7 @@ class ReferenceLine:
         return x, y
 
     def calc_perpendicular_point(self, x0, y0):
-        x = (x0 + y0 - self.b) / (self.k + 1)
+        x = (y0 * self.k - self.k * self.b + x0) / (1 + self.k * self.k)
         y = self.calc_y(x)
         return x, y
 
