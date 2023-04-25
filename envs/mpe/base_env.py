@@ -171,11 +171,20 @@ class BaseEnv(AECEnv):
                 agent.vel[0] = s_d_step * np.cos(yaw) + d_d_step * np.sin(yaw)
                 agent.vel[1] = s_d_step * np.sin(yaw) + d_d_step * np.cos(yaw)
 
-                agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
+                # path.d = path.lat_traj.calc_point(path.t)
+                # path.d_d = path.lat_traj.calc_first_derivative(path.t)
+                # path.d_dd = path.lat_traj.calc_second_derivative(path.t)
+                # path.d_ddd = path.lat_traj.calc_third_derivative(path.t)
+                # path.s = path.lon_traj.calc_point(path.t)
+                # path.s_d = path.lon_traj.calc_first_derivative(path.t)
+                # path.s_dd = path.lon_traj.calc_second_derivative(path.t)
+                # path.s_ddd = path.lon_traj.calc_third_derivative(path.t)
+                # agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
 
                 scenario_reward = float(self.scenario.reward(agent, self.world, self.infos))
-                path_reward = 0 if self.planner.check_paths(path) else -1
-                self.rewards[agent.name] = scenario_reward + path_reward
+                # path_reward = 0 if self.planner.check_paths(path) else -1
+                # self.rewards[agent.name] = scenario_reward + path_reward
+                self.rewards[agent.name] = scenario_reward
             else:
                 self.rewards[agent.name] = 0
 

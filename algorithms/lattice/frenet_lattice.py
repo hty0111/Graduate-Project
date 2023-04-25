@@ -124,17 +124,9 @@ class LatticePlanner:
     def calc_frenet_path(self, s, s_d, s_dd, d, d_d, d_dd, index):
         ti, di, vi = self.index_dict[index]
         fp = FrenetPath()
-        fp.t = np.arange(0.0, ti + self.dt, self.dt)
+        fp.t = np.arange(0.0, ti, self.dt)
         fp.lat_traj = QuinticPolynomial(d, d_d, d_dd, di, 0.0, 0.0, ti)
         fp.lon_traj = QuarticPolynomial(s, s_d, s_dd, vi, 0.0, ti)
-        fp.d = fp.lat_traj.calc_point(fp.t)
-        fp.d_d = fp.lat_traj.calc_first_derivative(fp.t)
-        fp.d_dd = fp.lat_traj.calc_second_derivative(fp.t)
-        fp.d_ddd = fp.lat_traj.calc_third_derivative(fp.t)
-        fp.s = fp.lon_traj.calc_point(fp.t)
-        fp.s_d = fp.lon_traj.calc_first_derivative(fp.t)
-        fp.s_dd = fp.lon_traj.calc_second_derivative(fp.t)
-        fp.s_ddd = fp.lon_traj.calc_third_derivative(fp.t)
 
         return fp
 
