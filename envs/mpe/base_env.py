@@ -84,7 +84,7 @@ class BaseEnv(AECEnv):
         for agent in self.world.agents:
             action_dim = self.planner.sample_dim
 
-            obs_dim = len(self.scenario.observation(agent, self.world.landmarks[self._index_map[agent.name]], self.world))
+            obs_dim = len(self.scenario.observation(agent, self.world.landmarks[self._index_map[agent.name]], self.world, self.width, self.height))
             state_dim += obs_dim - len(self.world.obstacles) * 2    # 不重复计算障碍物
             self.action_spaces[agent.name] = spaces.Discrete(action_dim)
             self.observation_spaces[agent.name] = spaces.Box(
@@ -119,19 +119,23 @@ class BaseEnv(AECEnv):
         return self.scenario.observation(
             self.world.agents[self._index_map[agent]],
             self.world.landmarks[self._index_map[agent]],
-            self.world
+            self.world,
+            self.width,
+            self.height
         ).astype(np.float32)
 
-    def state(self):
-        states = tuple(
-            self.scenario.observation(
-                self.world.agents[self._index_map[agent]],
-                self.world.landmarks[self._index_map[agent]],
-                self.world
-            ).astype(np.float32)
-            for agent in self.possible_agents
-        )
-        return np.concatenate(states, axis=None)
+    # def state(self):
+    #     states = tuple(
+    #         self.scenario.observation(
+    #             self.world.agents[self._index_map[agent]],
+    #             self.world.landmarks[self._index_map[agent]],
+    #             self.world,
+    #             self.width,
+    #             self.height
+    #         ).astype(np.float32)
+    #         for agent in self.possible_agents
+    #     )
+    #     return np.concatenate(states, axis=None)
 
     def reset(self, seed=None, return_info=False, options=None):
         if seed is not None:
@@ -218,9 +222,9 @@ class BaseEnv(AECEnv):
         else:
             self._clear_rewards()
 
-        # if self.render_mode == "human":
-        #     self.render()
-        #     time.sleep(2)
+        if self.render_mode == "human":
+            self.render()
+            # time.sleep(2)
 
         self.agent_selection = self._agent_selector.next()
 

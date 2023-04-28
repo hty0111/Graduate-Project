@@ -42,7 +42,7 @@ class FrenetPath:
 
 class LatticePlanner:
     # Parameter
-    MAX_V = 6   # maximum speed [m/s]
+    MAX_V = 5   # maximum speed [m/s]
     MIN_V = 1   # minimum speed [m/s]
     DELTA_V = 1 # speed sampling length [m/s]
 
@@ -50,9 +50,9 @@ class LatticePlanner:
     MIN_D = -3.0    # minimun road width [m]
     DELTA_D = 1.0   # road width sampling length [m]
 
-    MAX_T = 8.0  # max prediction time [s]
+    MAX_T = 6.0  # max prediction time [s]
     MIN_T = 2.0  # min prediction time [s]
-    DELTA_T = 1  # time tick [s]
+    DELTA_T = 2  # time tick [s]
 
     MAX_S = 30.0  # max longitude distance [m]
     MIN_S = 10.0  # min longitude distance [m]

@@ -194,15 +194,31 @@ class Scenario:
 
         return rew
 
-    def observation(self, agent: Agent, landmark: Landmark, world: World):
+    def observation(self, agent: Agent, landmark: Landmark, world: World, width, height):
         other_pos = []
         for other in world.agents:
             if other is agent:
                 continue
             other_pos.append(other.pos - agent.pos)
 
-        obstacles_pos = [obstacle.pos for obstacle in world.obstacles]
+        # obstacles_pos = [obstacle.pos for obstacle in world.obstacles]
+
+        # return np.concatenate(
+        #     [agent.vel] + [agent.pos] + [landmark.pos] + obstacles_pos
+        # )
+
+        agent_vel = agent.vel / 5
+        agent_pos = self.world_to_net(*agent.pos, width, height)
+        landmark_pos = self.world_to_net(*landmark.pos, width, height)
+        obstacles_pos = [self.world_to_net(*obstacle.pos, width, height) for obstacle in world.obstacles]
 
         return np.concatenate(
-            [agent.vel] + [agent.pos] + [landmark.pos] + obstacles_pos
+            [agent_vel] + [agent_pos] + [landmark_pos] + obstacles_pos
         )
+
+
+
+    def world_to_net(self, world_x, world_y, width, height):
+        net_x = (world_x - width / 2) / (width / 2)
+        net_y = (world_y - height / 2) / (height / 2)
+        return net_x, net_y
