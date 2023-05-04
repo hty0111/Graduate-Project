@@ -86,21 +86,21 @@ class Scenario:
         # set properties & states for agents & landmarks
         random_flag = True
         for i, (agent, landmark) in enumerate(zip(world.agents, world.landmarks)):
-            # 智能体起点按序均匀分布
-            delta_x = width / (num_agents + 1)
-            agent.pos = np.array([delta_x * (i + 1), agent.size])  # bottom
+            # # 智能体起点按序均匀分布
+            # delta_x = width / (num_agents + 1)
+            # agent.pos = np.array([delta_x * (i + 1), agent.size])  # bottom
 
-            # # 起点随机
-            # while True:
-            #     x = np_random.uniform(agent.size, width - agent.size)
-            #     success = True
-            #     for a in world.agents:
-            #         if a.pos is not None and np.abs(x - a.pos[0]) < agent.size + a.size:
-            #             success = False
-            #             break
-            #     if success is True:
-            #         break
-            # agent.pos = np.array([x, agent.size])  # bottom
+            # 起点随机
+            while True:
+                x = np_random.uniform(agent.size, width - agent.size)
+                success = True
+                for a in world.agents:
+                    if a.pos is not None and np.abs(x - a.pos[0]) < agent.size + a.size:
+                        success = False
+                        break
+                if success is True:
+                    break
+            agent.pos = np.array([x, agent.size])  # bottom
 
             agent.vel = np.zeros(world.dim_p)
             agent.c = np.zeros(world.dim_c)
@@ -180,7 +180,7 @@ class Scenario:
         if agent.collide:
             for a in world.agents:
                 if a is not agent and dones[a.name] is False and self.is_collision(agent, a):
-                    rew -= 1
+                    rew -= 0.5
 
             for obs in world.obstacles:
                 if self.is_collision(agent, obs):
@@ -206,3 +206,20 @@ class Scenario:
         return np.concatenate(
             [agent.vel] + [agent.pos] + [landmark.pos] + obstacles_pos
         )
+
+    #     agent_vel = agent.vel / 5
+    #     agent_pos = self.world_to_net(*agent.pos, width, height)
+    #     landmark_pos = landmark.pos - agent.pos
+    #     landmark_pos = self.world_to_net(*landmark_pos, width, height)
+    #     obstacles_pos = [self.world_to_net(*obstacle.pos, width, height) for obstacle in world.obstacles]
+    #
+    #     return np.concatenate(
+    #         [agent_vel] + [agent_pos] + [landmark_pos] + obstacles_pos
+    #     )
+    #
+    #
+    #
+    # def world_to_net(self, world_x, world_y, width, height):
+    #     net_x = (world_x - width / 2) / (width / 2)
+    #     net_y = (world_y - height / 2) / (height / 2)
+    #     return net_x, net_y
