@@ -152,7 +152,7 @@ class BaseEnv(AECEnv):
 
     def _execute_world_step(self):
         # set action for each agent
-        for i, agent in enumerate(self.world.agents):
+        for i, (agent, landmark) in enumerate(zip(self.world.agents, self.world.landmarks)):
             action = self.current_actions[i]
             reference_line = self.world.reference_lines[i]
             if action is not None:
@@ -181,10 +181,14 @@ class BaseEnv(AECEnv):
                 # path.s_ddd = path.lon_traj.calc_third_derivative(path.t)
                 # agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
 
-                scenario_reward = float(self.scenario.reward(agent, self.world, self.infos))
-                # path_reward = 0 if self.planner.check_paths(path) else -1
-                # self.rewards[agent.name] = scenario_reward + path_reward
-                self.rewards[agent.name] = scenario_reward
+                collision_reward = float(self.scenario.reward(agent, self.world, self.infos))
+                path_reward = 0 if self.planner.check_paths(path) else -5
+                tv_reward = self.planner.check_T_V(path)
+                # goal_reward = 100 if np.hypot(agent.pos[0] - landmark.pos[0], agent.pos[1] - landmark.pos[1]) < 2 else 0
+
+                self.rewards[agent.name] = collision_reward
+                # print("agent: ", agent.name, "reward: ", self.rewards[agent.name])
+
             else:
                 self.rewards[agent.name] = 0
 
@@ -195,7 +199,7 @@ class BaseEnv(AECEnv):
 
     def done(self, agent) -> bool:
         landmark = self.world.landmarks[self._index_map[agent.name]]
-        if np.hypot(agent.pos[0] - landmark.pos[0], agent.pos[1] - landmark.pos[1]) < 5:    # close enough to goal
+        if np.hypot(agent.pos[0] - landmark.pos[0], agent.pos[1] - landmark.pos[1]) < 2:    # close enough to goal
             return True
         elif agent.pos[0] > self.width or agent.pos[1] > self.height:   # out of bounds
             return True
@@ -220,13 +224,17 @@ class BaseEnv(AECEnv):
 
         # if self.render_mode == "human":
         #     self.render()
-        #     time.sleep(2)
+<<<<<<< Updated upstream
+        #     time.sleep(0.5)
+=======
+            # time.sleep(2)
+>>>>>>> Stashed changes
 
         self.agent_selection = self._agent_selector.next()
 
     def enable_render(self, mode="human"):
         if not self.renderOn and mode == "human":
-            self.screen = pygame.display.set_mode(self.screen.get_size())
+            # self.screen = pygame.display.set_mode(self.screen.get_size())
             self.renderOn = True
 
     def render(self):
