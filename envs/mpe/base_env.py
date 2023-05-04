@@ -182,7 +182,7 @@ class BaseEnv(AECEnv):
                 # agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
 
                 collision_reward = float(self.scenario.reward(agent, self.world, self.infos))
-                path_reward = 0 if self.planner.check_paths(path) else -5
+                path_reward = 0 if self.planner.check_paths(path) else -1
                 tv_reward = self.planner.check_T_V(path)
                 # goal_reward = 100 if np.hypot(agent.pos[0] - landmark.pos[0], agent.pos[1] - landmark.pos[1]) < 2 else 0
 
