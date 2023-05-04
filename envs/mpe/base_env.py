@@ -224,11 +224,7 @@ class BaseEnv(AECEnv):
 
         # if self.render_mode == "human":
         #     self.render()
-<<<<<<< Updated upstream
-        #     time.sleep(0.5)
-=======
-            # time.sleep(2)
->>>>>>> Stashed changes
+        #     time.sleep(0.2)
 
         self.agent_selection = self._agent_selector.next()
 
