@@ -188,6 +188,7 @@ class BaseEnv(AECEnv):
 
                 self.rewards[agent.name] = collision_reward
                 # print("agent: ", agent.name, "reward: ", self.rewards[agent.name])
+
             else:
                 self.rewards[agent.name] = 0
 
@@ -223,13 +224,17 @@ class BaseEnv(AECEnv):
 
         # if self.render_mode == "human":
         #     self.render()
+<<<<<<< Updated upstream
         #     time.sleep(0.5)
+=======
+            # time.sleep(2)
+>>>>>>> Stashed changes
 
         self.agent_selection = self._agent_selector.next()
 
     def enable_render(self, mode="human"):
         if not self.renderOn and mode == "human":
-            self.screen = pygame.display.set_mode(self.screen.get_size())
+            # self.screen = pygame.display.set_mode(self.screen.get_size())
             self.renderOn = True
 
     def render(self):
