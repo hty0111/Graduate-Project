@@ -180,10 +180,19 @@ class Scenario:
         if agent.collide:
             for a in world.agents:
                 if a is not agent and dones[a.name] is False and self.is_collision(agent, a):
+                    print("collide with agent: ", agent.name, a.name)
+                    print(agent.pos, a.pos)
+                    while True:
+                        if input() == 'q':
+                            break
                     rew -= 0.5
 
             for obs in world.obstacles:
                 if self.is_collision(agent, obs):
+                    print("collide with obstacle: ", agent.name, obs.x, obs.y)
+                    while True:
+                        if input() == 'q':
+                            break
                     rew -= 1
 
         # distance to goal

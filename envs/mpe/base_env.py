@@ -152,7 +152,7 @@ class BaseEnv(AECEnv):
 
     def _execute_world_step(self):
         # set action for each agent
-        for i, (agent, landmark) in enumerate(zip(self.world.agents, self.world.landmarks)):
+        for i, agent in enumerate(self.world.agents):
             action = self.current_actions[i]
             reference_line = self.world.reference_lines[i]
             if action is not None:
@@ -171,28 +171,29 @@ class BaseEnv(AECEnv):
                 agent.vel[0] = s_d_step * np.cos(yaw) + d_d_step * np.sin(yaw)
                 agent.vel[1] = s_d_step * np.sin(yaw) + d_d_step * np.cos(yaw)
 
-                # path.d = path.lat_traj.calc_point(path.t)
-                # path.d_d = path.lat_traj.calc_first_derivative(path.t)
-                # path.d_dd = path.lat_traj.calc_second_derivative(path.t)
-                # path.d_ddd = path.lat_traj.calc_third_derivative(path.t)
-                # path.s = path.lon_traj.calc_point(path.t)
-                # path.s_d = path.lon_traj.calc_first_derivative(path.t)
-                # path.s_dd = path.lon_traj.calc_second_derivative(path.t)
-                # path.s_ddd = path.lon_traj.calc_third_derivative(path.t)
-                # agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
-
-                collision_reward = float(self.scenario.reward(agent, self.world, self.infos))
-                path_reward = 0 if self.planner.check_paths(path) else -1
-                tv_reward = self.planner.check_T_V(path)
-                # goal_reward = 100 if np.hypot(agent.pos[0] - landmark.pos[0], agent.pos[1] - landmark.pos[1]) < 2 else 0
-
-                self.rewards[agent.name] = collision_reward
-                # print("agent: ", agent.name, "reward: ", self.rewards[agent.name])
-
-            else:
-                self.rewards[agent.name] = 0
+                path.d = path.lat_traj.calc_point(path.t)
+                path.d_d = path.lat_traj.calc_first_derivative(path.t)
+                path.d_dd = path.lat_traj.calc_second_derivative(path.t)
+                path.d_ddd = path.lat_traj.calc_third_derivative(path.t)
+                path.s = path.lon_traj.calc_point(path.t)
+                path.s_d = path.lon_traj.calc_first_derivative(path.t)
+                path.s_dd = path.lon_traj.calc_second_derivative(path.t)
+                path.s_ddd = path.lon_traj.calc_third_derivative(path.t)
+                agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
 
             self.infos[agent.name] = self.done(agent)
+
+        for i, (agent, landmark) in enumerate(zip(self.world.agents, self.world.landmarks)):
+            action = self.current_actions[i]
+            if action is not None:
+                collision_reward = float(self.scenario.reward(agent, self.world, self.infos))
+                # path_reward = 0 if self.planner.check_paths(path) else -1
+                # tv_reward = self.planner.check_T_V(path)
+                # goal_reward = 100 if np.hypot(agent.pos[0] - landmark.pos[0], agent.pos[1] - landmark.pos[1]) < 2 else 0
+                self.rewards[agent.name] = collision_reward
+            else:
+                self.rewards[agent.name] = 0
+            # print("agent: ", agent.name, "reward: ", self.rewards[agent.name])
 
         # plt.show()
         # self.world.step()
@@ -222,15 +223,14 @@ class BaseEnv(AECEnv):
         else:
             self._clear_rewards()
 
-        # if self.render_mode == "human":
-        #     self.render()
-        #     time.sleep(0.2)
+        if self.render_mode == "human":
+            self.render()
 
         self.agent_selection = self._agent_selector.next()
 
     def enable_render(self, mode="human"):
         if not self.renderOn and mode == "human":
-            # self.screen = pygame.display.set_mode(self.screen.get_size())
+            self.screen = pygame.display.set_mode(self.screen.get_size())
             self.renderOn = True
 
     def render(self):
@@ -263,6 +263,11 @@ class BaseEnv(AECEnv):
             pygame.draw.circle(self.screen, agent.color, (x, y), agent.size * self.canvas_scale)
             pygame.draw.circle(self.screen, (0, 0, 0), (x, y), agent.size * self.canvas_scale, 1)  # borders
 
+            # text
+            self.game_font.render_to(
+                surf=self.screen, dest=(x, y), text=agent.name, fgcolor=(0, 0, 0)
+            )
+
             # trajectory
             if agent.trajectory is not None:
                 trajectory_points = [(self.world2map(x, y)) for (x, y) in agent.trajectory]
@@ -284,10 +289,6 @@ class BaseEnv(AECEnv):
             pygame.draw.circle(self.screen, obstacle.color, (x, y), obstacle.size * self.canvas_scale)
             pygame.draw.circle(self.screen, (0, 0, 0), (x, y), obstacle.size * self.canvas_scale, 1)
 
-            # text
-            # self.game_font.render_to(
-            #     surf=self.screen, dest=(x, y), text=entity.name, fgcolor=(0, 0, 0)
-            # )
 
     def close(self):
         if self.renderOn:
