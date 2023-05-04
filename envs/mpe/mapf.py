@@ -180,7 +180,7 @@ class Scenario:
         if agent.collide:
             for a in world.agents:
                 if a is not agent and dones[a.name] is False and self.is_collision(agent, a):
-                    rew -= 1
+                    rew -= 0.5
 
             for obs in world.obstacles:
                 if self.is_collision(agent, obs):
@@ -206,3 +206,20 @@ class Scenario:
         return np.concatenate(
             [agent.vel] + [agent.pos] + [landmark.pos] + obstacles_pos
         )
+
+    #     agent_vel = agent.vel / 5
+    #     agent_pos = self.world_to_net(*agent.pos, width, height)
+    #     landmark_pos = landmark.pos - agent.pos
+    #     landmark_pos = self.world_to_net(*landmark_pos, width, height)
+    #     obstacles_pos = [self.world_to_net(*obstacle.pos, width, height) for obstacle in world.obstacles]
+    #
+    #     return np.concatenate(
+    #         [agent_vel] + [agent_pos] + [landmark_pos] + obstacles_pos
+    #     )
+    #
+    #
+    #
+    # def world_to_net(self, world_x, world_y, width, height):
+    #     net_x = (world_x - width / 2) / (width / 2)
+    #     net_y = (world_y - height / 2) / (height / 2)
+    #     return net_x, net_y

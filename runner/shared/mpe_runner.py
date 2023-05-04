@@ -36,7 +36,7 @@ class MPERunner(Runner):
 
                 # step: mapf.py/observation() & base_env.step(), shape: (num_envs * num_agents * dim)
                 observations, rewards, terminations, truncations, infos = self.envs.step(actions)
-
+                # print(rewards)
                 # # dones if terminations or truncations
                 # dones = np.array(
                 #     [b1 or b2 for t1, t2 in zip(terminations, truncations) for b1, b2 in zip(t1, t2)]).reshape(
@@ -51,6 +51,7 @@ class MPERunner(Runner):
                 if np.all(dones):
                     break
 
+            self.buffer.step = 0
             # compute return and update network
             self.compute()
             train_infos = self.train()
@@ -64,6 +65,7 @@ class MPERunner(Runner):
                 self.save()
 
             # log information
+            self.log_interval = 1
             if (episode + 1) % self.log_interval == 0:
                 end = time.time()
                 print("\n Scenario {} Algo {} Exp {} updates {}/{} episodes, total num time steps {}/{}, FPS {}.\n"

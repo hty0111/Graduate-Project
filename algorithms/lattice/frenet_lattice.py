@@ -42,7 +42,7 @@ class FrenetPath:
 
 class LatticePlanner:
     # Parameter
-    MAX_V = 6   # maximum speed [m/s]
+    MAX_V = 5   # maximum speed [m/s]
     MIN_V = 1   # minimum speed [m/s]
     DELTA_V = 1 # speed sampling length [m/s]
 
@@ -50,7 +50,7 @@ class LatticePlanner:
     MIN_D = -3.0    # minimun road width [m]
     DELTA_D = 1.0   # road width sampling length [m]
 
-    MAX_T = 8.0  # max prediction time [s]
+    MAX_T = 6.0  # max prediction time [s]
     MIN_T = 2.0  # min prediction time [s]
     DELTA_T = 1  # time tick [s]
 
@@ -124,9 +124,17 @@ class LatticePlanner:
     def calc_frenet_path(self, s, s_d, s_dd, d, d_d, d_dd, index):
         ti, di, vi = self.index_dict[index]
         fp = FrenetPath()
-        fp.t = np.arange(0.0, ti, self.dt)
+        fp.t = np.arange(0.0, ti + self.dt, self.dt)
         fp.lat_traj = QuinticPolynomial(d, d_d, d_dd, di, 0.0, 0.0, ti)
         fp.lon_traj = QuarticPolynomial(s, s_d, s_dd, vi, 0.0, ti)
+        # fp.d = fp.lat_traj.calc_point(fp.t)
+        # fp.d_d = fp.lat_traj.calc_first_derivative(fp.t)
+        # fp.d_dd = fp.lat_traj.calc_second_derivative(fp.t)
+        # fp.d_ddd = fp.lat_traj.calc_third_derivative(fp.t)
+        # fp.s = fp.lon_traj.calc_point(fp.t)
+        fp.s_d = fp.lon_traj.calc_first_derivative(fp.t)
+        # fp.s_dd = fp.lon_traj.calc_second_derivative(fp.t)
+        # fp.s_ddd = fp.lon_traj.calc_third_derivative(fp.t)
 
         return fp
 
@@ -179,6 +187,11 @@ class LatticePlanner:
         elif any([abs(curvature) > self.MAX_K for curvature in path.curvature]):  # Max curvature check
             return False
         return True
+
+    def check_T_V(self, path):
+        reward_t = self.MIN_T - path.t[-1]
+        reward_v = path.s_d[-1] - self.MAX_V
+        return reward_t + reward_v
 
     def frenet_optimal_planning(self, reference_line: CubicSpline2D, s, s_d, s_dd, d, d_d, d_dd, ob):
         fplist = self.calc_frenet_paths(s, s_d, s_dd, d, d_d, d_dd)
