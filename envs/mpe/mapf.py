@@ -201,22 +201,22 @@ class Scenario:
                 continue
             other_pos.append(other.pos - agent.pos)
 
-        obstacles_pos = [obstacle.pos for obstacle in world.obstacles]
+        # obstacles_pos = [obstacle.pos for obstacle in world.obstacles]
+        # return np.concatenate(
+        #     [agent.vel] + [agent.pos] + [landmark.pos] + obstacles_pos
+        # )
+
+        agent_vel = agent.vel / 5
+        agent_pos = self.world_to_net(*agent.pos)
+        landmark_pos = landmark.pos - agent.pos
+        landmark_pos = self.world_to_net(*landmark_pos)
+        obstacles_pos = [self.world_to_net(*obstacle.pos) for obstacle in world.obstacles]
+
         return np.concatenate(
-            [agent.vel] + [agent.pos] + [landmark.pos] + obstacles_pos
+            [agent_vel] + [agent_pos] + [landmark_pos] + obstacles_pos
         )
 
-    #     agent_vel = agent.vel / 5
-    #     agent_pos = self.world_to_net(*agent.pos)
-    #     landmark_pos = landmark.pos - agent.pos
-    #     landmark_pos = self.world_to_net(*landmark_pos)
-    #     obstacles_pos = [self.world_to_net(*obstacle.pos) for obstacle in world.obstacles]
-    #
-    #     return np.concatenate(
-    #         [agent_vel] + [agent_pos] + [landmark_pos] + obstacles_pos
-    #     )
-    #
-    # def world_to_net(self, world_x, world_y):
-    #     net_x = (world_x - 50 / 2) / (50 / 2)
-    #     net_y = (world_y - 100 / 2) / (100 / 2)
-    #     return net_x, net_y
+    def world_to_net(self, world_x, world_y):
+        net_x = (world_x - 50 / 2) / (50 / 2)
+        net_y = (world_y - 100 / 2) / (100 / 2)
+        return net_x, net_y
