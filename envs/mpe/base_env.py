@@ -223,14 +223,14 @@ class BaseEnv(AECEnv):
         else:
             self._clear_rewards()
 
-        if self.render_mode == "human":
-            self.render()
+        # if self.render_mode == "human":
+        #     self.render()
 
         self.agent_selection = self._agent_selector.next()
 
     def enable_render(self, mode="human"):
         if not self.renderOn and mode == "human":
-            self.screen = pygame.display.set_mode(self.screen.get_size())
+            # self.screen = pygame.display.set_mode(self.screen.get_size())
             self.renderOn = True
 
     def render(self):

@@ -11,7 +11,7 @@ version="v4.0"
 
 for seed in `seq ${seed_max}`;
 do
-    num_obs=$[${num_obstacles}+10*${seed}]
+    num_obs=$[${num_obstacles}+10*(${seed}-1)]
     exp="${version}_agents_${num_agents}_obs_${num_obs}_threads_${n_rollout_threads}"
     echo "env is ${env}, scenario is ${scenario}, algo is ${algo}, exp is ${exp}, max seed is ${seed_max}"
     echo "seed is ${seed}:"
