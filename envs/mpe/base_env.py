@@ -144,8 +144,7 @@ class BaseEnv(AECEnv):
         self.terminations = {name: False for name in self.agents}
         self.truncations = {name: False for name in self.agents}
         # self.infos = {name: False for name in self.agents}  # 用info存储done，绕过termination和truncation
-        self.infos = {name: {'done': False, 'reward': {'collision': 0, 'path': 0}} for name in self.agents}  # 用info存储done，绕过termination和truncation
-
+        self.infos = {name: {'done': False, 'reward': {'collision': 0, 'path': 0, 'goal': 0}} for name in self.agents}  # 用info存储done，绕过termination和truncation
 
         self.agent_selection = self._agent_selector.reset()
         self.steps = 0
@@ -182,6 +181,9 @@ class BaseEnv(AECEnv):
                 # path.s_dd = path.lon_traj.calc_second_derivative(path.t)
                 # path.s_ddd = path.lon_traj.calc_third_derivative(path.t)
                 # agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
+                path_reward = 0 if self.planner.check_paths(path) else -1
+                self.rewards[agent.name] += path_reward
+                self.infos[agent.name]['reward']['collision'] += path_reward
 
             self.infos[agent.name]['done'] = self.done(agent)
 
@@ -189,11 +191,11 @@ class BaseEnv(AECEnv):
             action = self.current_actions[i]
             if action is not None:
                 collision_reward = float(self.scenario.reward(agent, self.world, self.infos))
-                # path_reward = 0 if self.planner.check_paths(path) else -1
                 # tv_reward = self.planner.check_T_V(path)
-                # goal_reward = 100 if np.hypot(agent.pos[0] - landmark.pos[0], agent.pos[1] - landmark.pos[1]) < 2 else 0
-                self.rewards[agent.name] = collision_reward
+                goal_reward = 2 if np.hypot(agent.pos[0] - landmark.pos[0], agent.pos[1] - landmark.pos[1]) < 2 else 0
+                self.rewards[agent.name] += collision_reward + goal_reward
                 self.infos[agent.name]['reward']['collision'] += collision_reward
+                self.infos[agent.name]['reward']['goal'] += goal_reward
             else:
                 self.rewards[agent.name] = 0
             # print("agent: ", agent.name, "reward: ", self.rewards[agent.name])
