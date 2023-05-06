@@ -36,13 +36,12 @@ class MPERunner(Runner):
 
                 # step: mapf.py/observation() & base_env.step(), shape: (num_envs * num_agents * dim)
                 observations, rewards, terminations, truncations, infos = self.envs.step(actions)
-                # print(rewards)
-                # # dones if terminations or truncations
-                # dones = np.array(
-                #     [b1 or b2 for t1, t2 in zip(terminations, truncations) for b1, b2 in zip(t1, t2)]).reshape(
-                #     terminations.shape
-                # )
-                dones = np.array(infos)
+
+                # dones = np.array(infos)
+                dones = np.zeros((self.n_rollout_threads, self.num_agents))
+                for i_env in np.arange(self.n_rollout_threads):
+                    for i_agent in np.arange(self.num_agents):
+                        dones[i_env][i_agent] = infos[i_env][i_agent]['done']
 
                 # insert data into buffer
                 data = observations, rewards, dones, infos, values, actions, action_log_probs, rnn_states, rnn_states_critic

@@ -143,7 +143,9 @@ class BaseEnv(AECEnv):
         self._cumulative_rewards = {name: 0.0 for name in self.agents}
         self.terminations = {name: False for name in self.agents}
         self.truncations = {name: False for name in self.agents}
-        self.infos = {name: False for name in self.agents}  # 用info存储done，绕过termination和truncation
+        # self.infos = {name: False for name in self.agents}  # 用info存储done，绕过termination和truncation
+        self.infos = {name: {'done': False} for name in self.agents}  # 用info存储done，绕过termination和truncation
+
 
         self.agent_selection = self._agent_selector.reset()
         self.steps = 0
@@ -181,7 +183,7 @@ class BaseEnv(AECEnv):
                 # path.s_ddd = path.lon_traj.calc_third_derivative(path.t)
                 # agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
 
-            self.infos[agent.name] = self.done(agent)
+            self.infos[agent.name]['done'] = self.done(agent)
 
         for i, (agent, landmark) in enumerate(zip(self.world.agents, self.world.landmarks)):
             action = self.current_actions[i]
@@ -208,7 +210,7 @@ class BaseEnv(AECEnv):
             return False
 
     def step(self, action):
-        if self.infos[self.agent_selection] is True:
+        if self.infos[self.agent_selection]['done'] is True:
             action = None
 
         current_idx = self._index_map[self.agent_selection]
@@ -219,7 +221,7 @@ class BaseEnv(AECEnv):
             self.steps += 1
             if self.steps >= self.max_cycles:
                 for a in self.agents:
-                    self.infos[a] = True
+                    self.infos[a]['done'] = True
         else:
             self._clear_rewards()
 

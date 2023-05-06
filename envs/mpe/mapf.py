@@ -172,14 +172,14 @@ class Scenario:
         dist_min = entity1.size + entity2.size
         return True if dist < dist_min else False
 
-    def reward(self, agent: Agent, world: World, dones):
+    def reward(self, agent: Agent, world: World, infos):
         """ collision; distance to goal; velocity; lateral offset; """
         rew = 0
 
         # collision
         if agent.collide:
             for a in world.agents:
-                if a is not agent and dones[a.name] is False and self.is_collision(agent, a):
+                if a is not agent and infos[a.name]['done'] is False and self.is_collision(agent, a):
                     rew -= 0.5
 
             for obs in world.obstacles:
