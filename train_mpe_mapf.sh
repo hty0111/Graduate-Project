@@ -7,7 +7,7 @@ algo="mappo" #"rmappo" "ippo"
 num_steps=50000000
 n_rollout_threads=64
 seed_max=1
-version="v4.2"
+version="v4.3"
 
 for seed in `seq ${seed_max}`;
 do
