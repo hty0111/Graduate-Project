@@ -144,7 +144,7 @@ class BaseEnv(AECEnv):
         self.terminations = {name: False for name in self.agents}
         self.truncations = {name: False for name in self.agents}
         # self.infos = {name: False for name in self.agents}  # 用info存储done，绕过termination和truncation
-        self.infos = {name: {'done': False} for name in self.agents}  # 用info存储done，绕过termination和truncation
+        self.infos = {name: {'done': False, 'reward': {'collision': 0, 'path': 0}} for name in self.agents}  # 用info存储done，绕过termination和truncation
 
 
         self.agent_selection = self._agent_selector.reset()
@@ -193,6 +193,7 @@ class BaseEnv(AECEnv):
                 # tv_reward = self.planner.check_T_V(path)
                 # goal_reward = 100 if np.hypot(agent.pos[0] - landmark.pos[0], agent.pos[1] - landmark.pos[1]) < 2 else 0
                 self.rewards[agent.name] = collision_reward
+                self.infos[agent.name]['reward']['collision'] += collision_reward
             else:
                 self.rewards[agent.name] = 0
             # print("agent: ", agent.name, "reward: ", self.rewards[agent.name])
@@ -260,15 +261,18 @@ class BaseEnv(AECEnv):
 
         # update geometry and text positions
         for agent, landmark, reference_line in zip(self.world.agents, self.world.landmarks, self.world.reference_lines):
+            if self.infos[agent.name]['done'] is True:
+                continue
+
             # agent
             x, y = self.world2map(*agent.pos)
             pygame.draw.circle(self.screen, agent.color, (x, y), agent.size * self.canvas_scale)
             pygame.draw.circle(self.screen, (0, 0, 0), (x, y), agent.size * self.canvas_scale, 1)  # borders
 
-            # text
-            self.game_font.render_to(
-                surf=self.screen, dest=(x, y), text=agent.name, fgcolor=(0, 0, 0)
-            )
+            # # text
+            # self.game_font.render_to(
+            #     surf=self.screen, dest=(x, y), text=agent.name, fgcolor=(0, 0, 0)
+            # )
 
             # trajectory
             if agent.trajectory is not None:
