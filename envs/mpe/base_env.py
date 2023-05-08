@@ -172,16 +172,16 @@ class BaseEnv(AECEnv):
                 agent.vel[0] = s_d_step * np.cos(yaw) + d_d_step * np.sin(yaw)
                 agent.vel[1] = s_d_step * np.sin(yaw) + d_d_step * np.cos(yaw)
 
-                path.d = path.lat_traj.calc_point(path.t)
-                path.d_d = path.lat_traj.calc_first_derivative(path.t)
-                path.d_dd = path.lat_traj.calc_second_derivative(path.t)
-                path.d_ddd = path.lat_traj.calc_third_derivative(path.t)
-                path.s = path.lon_traj.calc_point(path.t)
-                path.s_d = path.lon_traj.calc_first_derivative(path.t)
-                path.s_dd = path.lon_traj.calc_second_derivative(path.t)
-                path.s_ddd = path.lon_traj.calc_third_derivative(path.t)
-                agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
-
+                # path.d = path.lat_traj.calc_point(path.t)
+                # path.d_d = path.lat_traj.calc_first_derivative(path.t)
+                # path.d_dd = path.lat_traj.calc_second_derivative(path.t)
+                # path.d_ddd = path.lat_traj.calc_third_derivative(path.t)
+                # path.s = path.lon_traj.calc_point(path.t)
+                # path.s_d = path.lon_traj.calc_first_derivative(path.t)
+                # path.s_dd = path.lon_traj.calc_second_derivative(path.t)
+                # path.s_ddd = path.lon_traj.calc_third_derivative(path.t)
+                # agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
+                
                 path_reward = 0 if self.planner.check_paths(path) else -1
                 self.rewards[agent.name] += path_reward
                 self.infos[agent.name]['reward']['path'] += path_reward
@@ -229,14 +229,14 @@ class BaseEnv(AECEnv):
         else:
             self._clear_rewards()
 
-        if self.render_mode == "human":
-            self.render()
+        # if self.render_mode == "human":
+        #     self.render()
 
         self.agent_selection = self._agent_selector.next()
 
     def enable_render(self, mode="human"):
         if not self.renderOn and mode == "human":
-            self.screen = pygame.display.set_mode(self.screen.get_size())
+            # self.screen = pygame.display.set_mode(self.screen.get_size())
             self.renderOn = True
 
     def render(self):
@@ -252,7 +252,6 @@ class BaseEnv(AECEnv):
         if self.render_mode == "human":
             self.draw()
             pygame.display.flip()
-        pygame.image.save(self.screen, f"/home/hty/Desktop/images/{self.steps}.jpg")
         return (
             np.transpose(observation, axes=(1, 0, 2))
             if self.render_mode == "rgb_array"
@@ -269,9 +268,9 @@ class BaseEnv(AECEnv):
                 continue
 
             # agent
-            # x, y = self.world2map(*agent.pos)
-            # pygame.draw.circle(self.screen, agent.color, (x, y), agent.size * self.canvas_scale)
-            # pygame.draw.circle(self.screen, (0, 0, 0), (x, y), agent.size * self.canvas_scale, 1)  # borders
+            x, y = self.world2map(*agent.pos)
+            pygame.draw.circle(self.screen, agent.color, (x, y), agent.size * self.canvas_scale)
+            pygame.draw.circle(self.screen, (0, 0, 0), (x, y), agent.size * self.canvas_scale, 1)  # borders
 
             # # text
             # self.game_font.render_to(
