@@ -63,6 +63,26 @@ class MPERunner(Runner):
             if episode % self.save_interval == 0 or episode == episodes - 1:
                 self.save()
 
+            if episode < 1000:
+                env_infos_early = {}
+                for agent_i in range(self.num_agents):
+                    for info in infos:
+                        for type, reward in info[agent_i]['reward'].items():
+                            key = f'agent{agent_i}/early/{type}'
+                            if key in env_infos_early.keys():
+                                env_infos_early[key] += reward / self.n_rollout_threads
+                            else:
+                                env_infos_early[key] = reward / self.n_rollout_threads
+                            train_key = f'rewards/early/{type}'
+                            if train_key in train_infos:
+                                train_infos[train_key] += reward / self.n_rollout_threads / self.num_agents
+                            else:
+                                train_infos[train_key] = reward / self.n_rollout_threads / self.num_agents
+
+                train_infos["rewards/early/average_episode_rewards"] = np.mean(self.buffer.rewards) * self.episode_length
+                self.log_train(train_infos, total_num_steps)
+                self.log_env(env_infos_early, total_num_steps)
+
             # log information
             if (episode + 1) % self.log_interval == 0:
                 end = time.time()
@@ -76,22 +96,23 @@ class MPERunner(Runner):
                               self.num_env_steps,
                               int(total_num_steps / (end - start))))
 
-                # env_infos = {}
-                # for agent_id in range(self.num_agents):
-                #     idv_rews = []
-                #     for info in infos:
-                #         if 'reward' in info[agent_id].keys():
-                #             idv_rews.append(info[agent_id]['reward']['collision'])
-                #     agent_k = 'agent%i/rewards/' % agent_id
-                #     env_infos[agent_k] = idv_rews
-
                 env_infos = {}
-                for agent_i, info in enumerate(infos[0]):   # 在
-                    for type, reward in info['reward'].items():
-                        env_infos[f'agent{agent_i}/reward/{type}'] = reward
+                for agent_i in range(self.num_agents):
+                    for info in infos:
+                        for type, reward in info[agent_i]['reward'].items():
+                            key = f'agent{agent_i}/{type}'
+                            if key in env_infos.keys():
+                                env_infos[key] += reward / self.n_rollout_threads
+                            else:
+                                env_infos[key] = reward / self.n_rollout_threads
+                            train_key = f'rewards/{type}'
+                            if train_key in train_infos:
+                                train_infos[train_key] += reward / self.n_rollout_threads / self.num_agents
+                            else:
+                                train_infos[train_key] = reward / self.n_rollout_threads / self.num_agents
 
-                train_infos["average_episode_rewards"] = np.mean(self.buffer.rewards) * self.episode_length
-                print("average episode rewards is {}".format(train_infos["average_episode_rewards"]))
+                train_infos["rewards/average_episode_rewards"] = np.mean(self.buffer.rewards) * self.episode_length
+                print("average episode rewards is {}".format(train_infos["rewards/average_episode_rewards"]))
                 self.log_train(train_infos, total_num_steps)
                 self.log_env(env_infos, total_num_steps)
 

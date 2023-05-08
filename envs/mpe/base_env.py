@@ -183,7 +183,7 @@ class BaseEnv(AECEnv):
                 # agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
                 path_reward = 0 if self.planner.check_paths(path) else -1
                 self.rewards[agent.name] += path_reward
-                self.infos[agent.name]['reward']['collision'] += path_reward
+                self.infos[agent.name]['reward']['path'] += path_reward
 
             self.infos[agent.name]['done'] = self.done(agent)
 
