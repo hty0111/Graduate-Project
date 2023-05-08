@@ -63,7 +63,7 @@ class MPERunner(Runner):
             if episode % self.save_interval == 0 or episode == episodes - 1:
                 self.save()
 
-            if episode < 1000:
+            if episode < 200:
                 env_infos_early = {}
                 for agent_i in range(self.num_agents):
                     for info in infos:

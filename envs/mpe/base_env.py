@@ -181,7 +181,7 @@ class BaseEnv(AECEnv):
                 # path.s_dd = path.lon_traj.calc_second_derivative(path.t)
                 # path.s_ddd = path.lon_traj.calc_third_derivative(path.t)
                 # agent.trajectory = [self.planner.frenet_to_cartesian(reference_line, si, di) for (si, di) in zip(path.s, path.d)]
-                
+
                 path_reward = 0 if self.planner.check_paths(path) else -1
                 self.rewards[agent.name] += path_reward
                 self.infos[agent.name]['reward']['path'] += path_reward
