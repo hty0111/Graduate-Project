@@ -54,7 +54,7 @@ class BaseEnv(AECEnv):
         self.height = 100
         self.canvas_scale = 10
         self.screen = pygame.Surface([self.width * self.canvas_scale, self.height * self.canvas_scale])
-        self.game_font = pygame.freetype.Font(os.path.join(os.path.dirname(__file__), "secrcode.ttf"), 15)
+        self.game_font = pygame.freetype.Font(os.path.join(os.path.dirname(__file__), "../envs/mpe/secrcode.ttf"), 15)
 
         # Set up the drawing window
         self.renderOn = False

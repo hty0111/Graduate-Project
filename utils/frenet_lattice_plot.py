@@ -8,9 +8,9 @@ Description:
     (https://www.youtube.com/watch?v=Cj6tAQe7UCY)
 """
 
-from quintic_polynomial import QuinticPolynomial
-from quartic_polynomial import QuarticPolynomial
-from cubic_spline import CubicSpline2D
+from algorithms.lattice.quintic_polynomial import QuinticPolynomial
+from algorithms.lattice.quartic_polynomial import QuarticPolynomial
+from algorithms.lattice.cubic_spline import CubicSpline2D
 
 import numpy as np
 import matplotlib.pyplot as plt
