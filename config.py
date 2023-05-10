@@ -160,7 +160,7 @@ def get_config(argv):
     # render parameters
     parser.add_argument("--save_gifs", action='store_true', default=False,
                         help="by default, do not save render video. If set, save video.")
-    parser.add_argument("--use_render", action='store_true', default=False,
+    parser.add_argument("--use_render", action='store_true', default=True,
                         help="by default, do not render the env during training. If set, start render. Note: something, the environment has internal render process which is not controlled by this hyperparam.")
     parser.add_argument("--render_episodes", type=int, default=5,
                         help="the number of episodes to render a given env")

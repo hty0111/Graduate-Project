@@ -53,7 +53,7 @@ def read_data(version):
     path_early_single = 'agent0/early/path/agent0/early/path'
     goal_early_single = 'agent0/early/goal/agent0/early/goal'
 
-    steps = 20
+    steps = 50
 
     data_type = 'path'
 
@@ -106,26 +106,29 @@ def read_json():
     plt.show()
 
 
-def read_csv():
-    data_file = 'average_reward.csv'
-    data_path = Path(os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]) / 'data' / data_file
+def read_simple_spread():
+    data_path = '/home/hty/Desktop/Graduation-Project/results/MPE/simple_spread/mappo/check/run4/logs/summary.json'
     if os.path.exists(data_path) is False:
         exit(0)
-    data = pd.read_csv(data_path)
-    data = data.iloc[1:, 1:, ].to_numpy()
+    with open(data_path) as f:
+        data = json.load(f)
 
-    x = data[:, 0]
-    y = data[:, 1]
-    y = (y - y.min) / (y.max() - y.min())
+    data = np.array(data['/home/hty/Desktop/mappo/onpolicy/scripts/results/MPE/simple_spread/mappo/check/run4/logs/average_episode_rewards/average_episode_rewards'])
+    x = data[:, 1] / 1e5
+    y = data[:, 2] / 200
+    y = -y
+
+    # y = sp.signal.savgol_filter(y, 20, 5)
 
     plt.figure()
     plt.title('Collision')
     plt.plot(x, y)
-    plt.xlabel('steps')
-    plt.ylabel('rewards')
+    plt.xlabel('Steps [x 1e5]')
+    plt.ylabel('Collision Times')
     plt.grid(True, ls='--')
     plt.show()
 
 
 if __name__ == "__main__":
-    read_json()
+    # read_json()
+    read_simple_spread()
