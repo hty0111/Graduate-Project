@@ -9,7 +9,7 @@ n_rollout_threads=64
 seed=1
 agents_iter=4
 obs_iter=3
-version="v5.2"
+version="v5.3"
 
 #for agents_i in `seq ${agents_iter}`;
 #do

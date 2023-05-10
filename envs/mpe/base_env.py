@@ -85,7 +85,7 @@ class BaseEnv(AECEnv):
             action_dim = self.planner.sample_dim
 
             obs_dim = len(self.scenario.observation(agent, self.world.landmarks[self._index_map[agent.name]], self.world))
-            state_dim += obs_dim - len(self.world.obstacles) * 2    # 不重复计算障碍物
+            state_dim += obs_dim
             self.action_spaces[agent.name] = spaces.Discrete(action_dim)
             self.observation_spaces[agent.name] = spaces.Box(
                 low=-np.float32(np.inf),
@@ -93,7 +93,6 @@ class BaseEnv(AECEnv):
                 shape=(obs_dim,),
                 dtype=np.float32,
             )
-        state_dim += len(self.world.obstacles) * 2
 
         # state是每个agent的observation，障碍物信息只保存一遍
         self.state_space = spaces.Box(

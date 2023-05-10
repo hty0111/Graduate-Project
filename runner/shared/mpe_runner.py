@@ -126,15 +126,15 @@ class MPERunner(Runner):
 
         # replay buffer
         if self.use_centralized_V:
-            self_state_dim = observations.shape[2] - 2 * self.num_obstacles
-            self_state, obstacles = observations[:, :, :self_state_dim], observations[:, :, self_state_dim:]
-            state = self_state.reshape(self.n_rollout_threads, -1)
+            # self_state_dim = observations.shape[2] - 2 * self.num_obstacles
+            # self_state, obstacles = observations[:, :, :self_state_dim], observations[:, :, self_state_dim:]
+            # state = self_state.reshape(self.n_rollout_threads, -1)
+            # state = np.expand_dims(state, 1).repeat(self.num_agents, axis=1)
+            # # (num_envs, num_agents, state_dim)
+            # state = np.concatenate((state, obstacles), axis=2)
+
+            state = observations.reshape(self.n_rollout_threads, -1)
             state = np.expand_dims(state, 1).repeat(self.num_agents, axis=1)
-            # (num_envs, num_agents, state_dim)
-            state = np.concatenate((state, obstacles), axis=2)
-            # print("self state: ", self_state)
-            # print("obstacles", obstacles)
-            # print("state: ", state)
         else:
             state = observations
 
@@ -173,12 +173,15 @@ class MPERunner(Runner):
         rewards = np.expand_dims(rewards, axis=-1)
 
         if self.use_centralized_V:
-            self_state_dim = observations.shape[2] - 2 * self.num_obstacles
-            self_state, obstacles = observations[:, :, :self_state_dim], observations[:, :, self_state_dim:]
-            state = self_state.reshape(self.n_rollout_threads, -1)
+            # self_state_dim = observations.shape[2] - 2 * self.num_obstacles
+            # self_state, obstacles = observations[:, :, :self_state_dim], observations[:, :, self_state_dim:]
+            # state = self_state.reshape(self.n_rollout_threads, -1)
+            # state = np.expand_dims(state, 1).repeat(self.num_agents, axis=1)
+            # # (num_envs, num_agents, state_dim)
+            # state = np.concatenate((state, obstacles), axis=2)
+
+            state = observations.reshape(self.n_rollout_threads, -1)
             state = np.expand_dims(state, 1).repeat(self.num_agents, axis=1)
-            # (num_envs, num_agents, state_dim)
-            state = np.concatenate((state, obstacles), axis=2)
         else:
             state = observations
 
