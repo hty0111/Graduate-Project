@@ -186,24 +186,13 @@ class Scenario:
                 if self.is_collision(agent, obs):
                     rew -= 1
 
-        # distance to goal
-        # if np.hypot(agent.pos[0] - landmark.pos[0], agent.pos[1] - landmark.pos[1]) < 5:
-        #     rew += 10
-
-        # velocity
-
         return rew
 
     def observation(self, agent: Agent, landmark: Landmark, world: World):
-        other_pos = []
-        for other in world.agents:
-            if other is agent:
-                continue
-            other_pos.append(other.pos - agent.pos)
-
-        obstacles_pos = [obstacle.pos for obstacle in world.obstacles]
+        obstacles_pos = [obstacle.pos - agent.pos for obstacle in world.obstacles]
+        landmark_pos = landmark.pos - agent.pos
         return np.concatenate(
-            [agent.vel] + [agent.pos] + [landmark.pos] + obstacles_pos
+            [agent.vel] + [agent.pos] + [landmark_pos] + obstacles_pos
         )
 
     #     agent_vel = agent.vel / 5
