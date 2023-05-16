@@ -55,22 +55,23 @@ def read_data(version):
 
     steps = 1040
 
-    data_type = 'collision'
-    # data_type = 'path'
+    # data_type = 'collision'
+    data_type = 'path'
     # data_type = 'goal'
 
-    data_early = np.array(data[root_dir + collision_early])
-    data_later = np.array(data[root_dir + collision])
+    # data_early = np.array(data[root_dir + collision_early])
+    # data_later = np.array(data[root_dir + collision])
 
-    # data_early = np.array(data[root_dir + path_early])
-    # data_later = np.array(data[root_dir + path])
+    data_early = np.array(data[root_dir + path_early])
+    data_later = np.array(data[root_dir + path])
 
     # data_early = np.array(data[root_dir + goal_early])
     # data_later = np.array(data[root_dir + goal])
 
-    data = np.concatenate((data_early[:4, 1:], data_later[:steps, 1:]))
+    # data = np.concatenate((data_early[:4, 1:], data_later[:steps, 1:]))
     # data = np.concatenate((np.array([[0, -0.45]]), data_later[:steps, 1:]))
-    data = data_later[:steps, 1:]
+    # data = data_later[:steps, 1:]
+    data = data_early[:200, 1:]
 
     # data = np.concatenate((data_early[:, 1:], data_later[198:steps, 1:]))
     # data = data_later[:steps, 1:]
@@ -169,22 +170,22 @@ def read_json():
     # plt.legend()
     # plt.show()
 
-    version = 'v5.3_agents_5_obs_5_threads_128/run1'
-    x_5_5, y_5_5 = read_data(version)
-
-    version = 'v5.1_agents_10_obs_0_threads_128/run1'
-    x_10_0, y_10_0 = read_data(version)
-
-    plt.figure()
-    plt.plot(x_5_5, y_5_5, label='5 agents & 5 obstacles')
-    plt.plot(x_10_0, y_10_0, label='10 agents')
-    plt.xlabel('Steps [x 1e5]')
-    plt.ylabel('Collision Times')
-    # plt.ylabel('Reach Goal Times')
-    # plt.ylabel('Kinetic Failure Times')
-    plt.grid(True, ls='--')
-    plt.legend()
-    plt.show()
+    # version = 'v5.3_agents_5_obs_5_threads_128/run1'
+    # x_5_5, y_5_5 = read_data(version)
+    #
+    # version = 'v5.1_agents_10_obs_0_threads_128/run1'
+    # x_10_0, y_10_0 = read_data(version)
+    #
+    # plt.figure()
+    # plt.plot(x_5_5, y_5_5, label='5 agents & 5 obstacles')
+    # plt.plot(x_10_0, y_10_0, label='10 agents')
+    # plt.xlabel('Steps [x 1e5]')
+    # plt.ylabel('Collision Times')
+    # # plt.ylabel('Reach Goal Times')
+    # # plt.ylabel('Kinetic Failure Times')
+    # plt.grid(True, ls='--')
+    # plt.legend()
+    # plt.show()
 
     # version = 'v5.1_agents_10_obs_20_threads_128/run1'
     # x_10_20, y_10_20 = read_data(version)
@@ -203,8 +204,8 @@ def read_json():
     # plt.legend()
     # plt.show()
 
-    # version = 'v5.1_agents_5_obs_0_threads_128/run1'
-    # x_5_0, y_5_0 = read_data(version)
+    version = 'v5.1_agents_5_obs_0_threads_128/run1'
+    x_5_0, y_5_0 = read_data(version)
     # version = 'v5.1_agents_5_obs_20_threads_128/run1'
     # x_5_20, y_5_20 = read_data(version)
     # version = 'v5.1_agents_20_obs_0_threads_128/run1'
@@ -212,17 +213,17 @@ def read_json():
     # version = 'v5.1_agents_20_obs_20_threads_128/run1'
     # x_20_20, y_20_20 = read_data(version)
     #
-    # plt.figure()
-    # plt.plot(x_5_0, y_5_0, label='5 agents & 5 obstacles')
+    plt.figure()
+    plt.plot(x_5_0, y_5_0, label='5 agents & 5 obstacles')
     # plt.plot(x_5_20, y_5_20, label='5 agents & 20 obstacles')
     # plt.plot(x_20_0, y_20_0, label='20 agents & 0 obstacles')
     # plt.plot(x_20_20, y_20_20, label='20 agents & 20 obstacles')
-    # plt.xlabel('Steps [x 1e5]')
-    # # plt.ylabel('Reach Goal Times')
-    # plt.ylabel('Kinetic Failure Times')
-    # plt.grid(True, ls='--')
-    # plt.legend()
-    # plt.show()
+    plt.xlabel('Steps [x 1e5]')
+    # plt.ylabel('Reach Goal Times')
+    plt.ylabel('Kinetic Failure Times')
+    plt.grid(True, ls='--')
+    plt.legend()
+    plt.show()
 
 
 def read_simple_spread():

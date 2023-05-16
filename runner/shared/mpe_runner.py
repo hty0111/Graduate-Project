@@ -7,6 +7,7 @@ Description:
 
 import time
 import numpy as np
+import pandas as pd
 import torch
 from runner.shared.base_runner import Runner
 from utils.typecasting import t2n
@@ -83,8 +84,14 @@ class MPERunner(Runner):
                 self.log_train(train_infos, total_num_steps)
                 self.log_env(env_infos_early, total_num_steps)
 
+            if episode % 50000 == 0:
+                for type, data in infos[0][0]['path'].items():
+                    file_name = self.log_dir + f'/{episode}/{type}.csv'
+                    dataframe = pd.DataFrame({type: data})
+                    dataframe.to_csv(file_name, index=False, sep=',')
+
             # log information
-            if (episode + 1) % self.log_interval == 0:
+            if episode % self.log_interval == 0:
                 end = time.time()
                 print("\n Scenario {} Algo {} Exp {} updates {}/{} episodes, total num time steps {}/{}, FPS {}.\n"
                       .format(self.args.scenario_name,

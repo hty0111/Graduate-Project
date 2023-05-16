@@ -143,7 +143,10 @@ class BaseEnv(AECEnv):
         self.terminations = {name: False for name in self.agents}
         self.truncations = {name: False for name in self.agents}
         # self.infos = {name: False for name in self.agents}  # 用info存储done，绕过termination和truncation
-        self.infos = {name: {'done': False, 'reward': {'collision': 0, 'path': 0, 'goal': 0}} for name in self.agents}  # 用info存储done，绕过termination和truncation
+        self.infos = {name: {'done': False,
+                             'reward': {'collision': 0, 'path': 0, 'goal': 0},
+                             'path': {'d': [], 's': [], 'v': [], 'a': [], 't': []},
+                             } for name in self.agents}  # 用info存储done，绕过termination和truncation
 
         self.agent_selection = self._agent_selector.reset()
         self.steps = 0
@@ -184,6 +187,17 @@ class BaseEnv(AECEnv):
                 path_reward = 0 if self.planner.check_paths(path) else -1
                 self.rewards[agent.name] += path_reward
                 self.infos[agent.name]['reward']['path'] += path_reward
+
+                t = np.arange(0.0, self.step_dt, 0.2)
+                d = path.lat_traj.calc_point(t)
+                s = path.lon_traj.calc_point(t)
+                s_d = path.lon_traj.calc_first_derivative(t)
+                s_dd = path.lon_traj.calc_second_derivative(t)
+                self.infos[agent.name]['path']['t'] = np.concatenate((self.infos[agent.name]['path']['t'], t + self.steps * self.step_dt))
+                self.infos[agent.name]['path']['d'] = np.concatenate((self.infos[agent.name]['path']['d'], d))
+                self.infos[agent.name]['path']['s'] = np.concatenate((self.infos[agent.name]['path']['s'], s))
+                self.infos[agent.name]['path']['v'] = np.concatenate((self.infos[agent.name]['path']['v'], s_d))
+                self.infos[agent.name]['path']['a'] = np.concatenate((self.infos[agent.name]['path']['a'], s_dd))
 
             self.infos[agent.name]['done'] = self.done(agent)
 
