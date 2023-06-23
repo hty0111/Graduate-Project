@@ -145,7 +145,7 @@ class BaseEnv(AECEnv):
         # self.infos = {name: False for name in self.agents}  # 用info存储done，绕过termination和truncation
         self.infos = {name: {'done': False,
                              'reward': {'collision': 0, 'path': 0, 'goal': 0},
-                             'path': {'d': [], 's': [], 'v': [], 'a': [], 't': []},
+                             'path': {'d': [], 'd_d': [], 'd_dd': [], 's': [], 's_d': [], 's_dd': [], 't': []},
                              } for name in self.agents}  # 用info存储done，绕过termination和truncation
 
         self.agent_selection = self._agent_selector.reset()
@@ -190,14 +190,18 @@ class BaseEnv(AECEnv):
 
                 t = np.arange(0.0, self.step_dt, 0.2)
                 d = path.lat_traj.calc_point(t)
+                d_d = path.lat_traj.calc_first_derivative(t)
+                d_dd = path.lat_traj.calc_second_derivative(t)
                 s = path.lon_traj.calc_point(t)
                 s_d = path.lon_traj.calc_first_derivative(t)
                 s_dd = path.lon_traj.calc_second_derivative(t)
                 self.infos[agent.name]['path']['t'] = np.concatenate((self.infos[agent.name]['path']['t'], t + self.steps * self.step_dt))
                 self.infos[agent.name]['path']['d'] = np.concatenate((self.infos[agent.name]['path']['d'], d))
+                self.infos[agent.name]['path']['d_d'] = np.concatenate((self.infos[agent.name]['path']['d_d'], d_d))
+                self.infos[agent.name]['path']['d_dd'] = np.concatenate((self.infos[agent.name]['path']['d_dd'], d_dd))
                 self.infos[agent.name]['path']['s'] = np.concatenate((self.infos[agent.name]['path']['s'], s))
-                self.infos[agent.name]['path']['v'] = np.concatenate((self.infos[agent.name]['path']['v'], s_d))
-                self.infos[agent.name]['path']['a'] = np.concatenate((self.infos[agent.name]['path']['a'], s_dd))
+                self.infos[agent.name]['path']['s_d'] = np.concatenate((self.infos[agent.name]['path']['s_d'], s_d))
+                self.infos[agent.name]['path']['s_dd'] = np.concatenate((self.infos[agent.name]['path']['s_dd'], s_dd))
 
             self.infos[agent.name]['done'] = self.done(agent)
 

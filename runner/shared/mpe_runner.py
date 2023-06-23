@@ -84,10 +84,10 @@ class MPERunner(Runner):
                 self.log_train(train_infos, total_num_steps)
                 self.log_env(env_infos_early, total_num_steps)
 
-            if episode % 50000 == 0:
-                for type, data in infos[0][0]['path'].items():
-                    file_name = self.log_dir + f'/{episode}/{type}.csv'
-                    dataframe = pd.DataFrame({type: data})
+            if episode % 50 == 0:
+                for t, data in infos[0][0]['path'].items():
+                    file_name = self.log_dir + f'/{episode}_{t}.csv'
+                    dataframe = pd.DataFrame({t: data})
                     dataframe.to_csv(file_name, index=False, sep=',')
 
             # log information

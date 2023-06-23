@@ -1,15 +1,15 @@
 #!/bin/sh
 env="MPE"
 scenario="mapf"
-num_agents=10
-num_obstacles=10
+num_agents=5
+num_obstacles=0
 algo="mappo" #"rmappo" "ippo"
-num_steps=20000000
+num_steps=1000000
 n_rollout_threads=64
 seed=1
 agents_iter=4
 obs_iter=3
-version="v5.3"
+version="v5.4"
 
 #for agents_i in `seq ${agents_iter}`;
 #do
